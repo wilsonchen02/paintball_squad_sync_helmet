@@ -1,61 +1,43 @@
-/*
-  ESP-NOW Demo - Receive
-  esp-now-demo-rcv.ino
-  Reads data from Initiator
-  
-  DroneBot Workshop 2022
-  https://dronebotworkshop.com
-*/
-
-// Include Libraries
-#include <esp_now.h>
 #include <WiFi.h>
+#include <esp_now.h>
 
-// Define a data structure
-typedef struct struct_message {
-  char a[32];
-  int b;
-  float c;
-  bool d;
-} struct_message;
+// Correct callback for ESP32-S3 / IDF v5.x
+void onReceive(const esp_now_recv_info_t *recv_info, const uint8_t *incomingData, int len) {
+  // Fixed-size message buffer
+  char message[51];           // match sender’s fixed 50-byte payload
+  memcpy(message, incomingData, 50);
+  message[50] = '\0';
 
-// Create a structured object
-struct_message myData;
+  Serial.print("Message: ");
+  Serial.println(message);
 
+  // Build MAC address once — prevents truncated prints
+  char macStr[18];
+  snprintf(macStr, sizeof(macStr),
+           "%02X:%02X:%02X:%02X:%02X:%02X",
+           recv_info->src_addr[0], recv_info->src_addr[1], recv_info->src_addr[2],
+           recv_info->src_addr[3], recv_info->src_addr[4], recv_info->src_addr[5]);
 
-// Callback function executed when data is received
-void OnDataRecv(const esp_now_recv_info * mac, const uint8_t *incomingData, int len) {
-  memcpy(&myData, incomingData, sizeof(myData));
-  Serial.print("Data received: ");
-  Serial.println(len);
-  Serial.print("Character Value: ");
-  Serial.println(myData.a);
-  Serial.print("Integer Value: ");
-  Serial.println(myData.b);
-  Serial.print("Float Value: ");
-  Serial.println(myData.c);
-  Serial.print("Boolean Value: ");
-  Serial.println(myData.d);
+  Serial.print("Received from: ");
+  Serial.println(macStr);
   Serial.println();
 }
 
 void setup() {
-  // Set up Serial Monitor
   Serial.begin(115200);
-  
-  // Set ESP32 as a Wi-Fi Station
-  WiFi.mode(WIFI_STA);
+  delay(500); // let USB serial stabilize
 
-  // Initilize ESP-NOW
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
   }
-  
-  // Register callback function
-  esp_now_register_recv_cb(OnDataRecv);
-}
- 
-void loop() {
 
+  esp_now_register_recv_cb(onReceive);
+}
+
+void loop() {
+  // Receiver runs asynchronously
 }
