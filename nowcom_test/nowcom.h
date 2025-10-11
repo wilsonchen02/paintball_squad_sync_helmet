@@ -41,20 +41,22 @@ struct message {
   float y;
 };
 
-class nowcom {
+class Nowcom {
 private:
   uint8_t team_id;
   uint8_t channel;
 	uint8_t * data_buffer;
 	uint8_t m_self_mac[MAC_ADDR_LEN];
 	esp_now_peer_info_t m_broadcast;  // Broadcast address FF:FF:FF:FF:FF:FF
+  static * Nowcom my_nowcom;
 
+  // NOTE: should probably look over how this works again (Maybe send msg to former peers and make them remove this address)
   // TODO: if a peer switches teams, have a counter that will remove
   // non-communicating devices
   // value: boolean flag (was there communication in the last 30 seconds?)
   // Receiving callback function will set the flag to true, RTOS task will
   // check receiving flag status
-  std::unordered_map<esp_now_peer_info_t, bool> m_peers;
+  std::unordered_map<uint8_t *, bool> m_peers;
 
   // Callback functions for send/receive
 	static void send_data_cb(const esp_now_send_info_t * send_info, esp_now_send_status_t status);
@@ -62,13 +64,16 @@ private:
 
   // Function that checks if device expired
   // Sets last sent flag to false if there was communication in the last 30 seconds
-  void drop_unused_peers();
+  // void drop_unused_peers();
 	
 public:
+  Nowcom();
+
+  // Start WiFi station and register callbacks
 	uint8_t now_init();
 
   // Get own device's MAC address
-	const uint8_t * now_get_self_mac();
+	const uint8_t * get_self_mac();
 
   // Set game channel (changes wifi channel)
   void set_channel(uint8_t channel);
@@ -80,20 +85,24 @@ public:
 	uint8_t now_send_msg(uint8_t * addr, uint8_t * data);
 	uint8_t now_recv_msg(const uint8_t * msg, uint8_t * data);
 
+  // Print mac addresses of connected peers (for debugging)
+  void print_peer_mac_addresses();
+
   // ===== Team functions =====
 
-  // Sends user's location to teammates
-  uint8_t send_location();
+  // TODO: uncomment these when we implement them
+  // // Sends user's location to teammates
+  // uint8_t send_location();
 
-  // Sends alert to teammates
-  uint8_t send_alert();
+  // // Sends alert to teammates
+  // uint8_t send_alert();
 
   // ===== Broadcast functions =====
 	uint8_t broadcast_init();
 	uint8_t broadcast_mac_address();
 
-  // Sends SOS signal to all players in the game channel
-  uint8_t send_sos();
+  // // Sends SOS signal to all players in the game channel
+  // uint8_t send_sos();
 };
 
 #endif
