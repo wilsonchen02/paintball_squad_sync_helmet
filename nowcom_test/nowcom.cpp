@@ -25,6 +25,7 @@ void Nowcom::recv_data_cb(const esp_now_recv_info_t * recv_info, const uint8_t *
   // Cast the data to be in the message struct format
   msg_content = reinterpret_cast<const message*>(extracted_data);
 
+  // TODO: put this stuff in a task that the callback function triggers
   // Check message type
   switch (msg_content->msg_type)) {
     case (message_type::Pairing):
@@ -101,6 +102,7 @@ uint8_t Nowcom::now_send_msg(uint8_t * addr, uint8_t * data) {
 	return NOW_ERROR;
 }
 
+// TODO: put this in a task. Also do some sort of error checking for corrupted message
 uint8_t Nowcom::now_recv_msg(const uint8_t * message, uint8_t * data) {
 	const uint8_t expected_header[HEADER_LENGTH] = MESSAGE_HEADER;
   const uint8_t expected_footer[FOOTER_LENGTH] = MESSAGE_FOOTER;
