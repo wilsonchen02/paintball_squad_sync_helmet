@@ -1,9 +1,5 @@
 #include "Nowcom.h"
 
-Nowcom::Nowcom() {
-  my_nowcom = this;
-}
-
 // NOTE: keep callback functions short and 
 void Nowcom::send_data_cb(const esp_now_send_info_t * tx_info, esp_now_send_status_t status) {
 	// TODO, doesn't have to do anything for now
@@ -19,24 +15,52 @@ void Nowcom::recv_data_cb(const esp_now_recv_info_t * recv_info, const uint8_t *
 	Serial.println();
 
   uint8_t * extracted_data;
-  struct * msg_content;
+  const message * msg_content;
+
   // Verify header + footer of message and extract data
-  now_recv_msg(data, extracted_data);
+  const uint8_t expected_header[HEADER_LENGTH] = MESSAGE_HEADER;
+  const uint8_t expected_footer[FOOTER_LENGTH] = MESSAGE_FOOTER;
+	uint8_t message_size = sizeof(data);
+	uint8_t data_size = message_size - HEADER_LENGTH - FOOTER_LENGTH;
+	
+  // Temporary testing, seeing if replacing now_recv_msg() works
+	if (memcmp(data, expected_header, HEADER_LENGTH) != 0) {
+    Serial.println("Header of message is incorrect");
+    return;
+  }
+  if (memcmp(data + HEADER_LENGTH + data_size, expected_footer, FOOTER_LENGTH) != 0) {
+    Serial.println("Footer of message is incorrect");
+    return;
+  }
+
+  // Extract the data from the message
+  memcpy(extracted_data, data + HEADER_LENGTH, data_size);
+	Serial.println("Successfully extracted data from message");
+
   // Cast the data to be in the message struct format
   msg_content = reinterpret_cast<const message*>(extracted_data);
 
-  // TODO: put this stuff in a task that the callback function triggers
+  // TODO: Have switch cases trigger interrupts to run tasks
   // Check message type
-  switch (msg_content->msg_type)) {
+  switch (msg_content->msg_type) {
     case (message_type::Pairing):
-      // Check team ID to make sure it's your team
-      if (data->team_id == team_id) {
-        // Add new device to m_peers unordered map
-        m_peers[recv_info->src_addr] = true;
+      // // Check team ID to make sure it's your team
+      // if (msg_content->team_id == team_id) {
+      //   // Add new device to m_peers unordered map
+      //   m_peers[recv_info->src_addr] = true;
 
-        // Actually add to ESP NOW's peer list
-        esp_now_add_peer(new_peer);
-      }
+      //   // Actually add to ESP NOW's peer list
+      //   esp_now_peer_info_t * new_peer = malloc(sizeof(esp_now_peer_info_t));
+      //   memset(new_peer, 0 sizeof(esp_now_peer_info_t));
+      //   new_peer->channel = channel;
+      //   new_peer->encrypt = is_encrypted;
+      //   memcpy(new_peer->peer_addr, recv_info->src_addr, 6);
+
+
+      //   if (esp_now_add_peer(new_peer) != ESP_OK) {
+      //     Serial.println("Failed to add peer");
+      //   }
+      // }
       break;
 
     case (message_type::Location):
@@ -77,13 +101,25 @@ const uint8_t * Nowcom::get_self_mac() {
 	return m_self_mac;
 }
 
+void Nowcom::set_encryption(bool is_encrypted) {
+  this->is_encrypted = is_encrypted;
+}
+
+void Nowcom::set_channel(uint8_t channel) {
+  this->channel = channel;
+}
+
+void Nowcom::set_team(uint8_t team_id) {
+  this->team_id = team_id;
+}
+
 uint8_t Nowcom::now_send_msg(uint8_t * addr, uint8_t * data) {
 	const uint8_t header[HEADER_LENGTH] = MESSAGE_HEADER;
 	const uint8_t footer[FOOTER_LENGTH] = MESSAGE_FOOTER;
 	const uint8_t data_size = sizeof(data);
 	Serial.println(data_size);
-	Serial.println(data_size + message_OVERHEAD);
-	uint8_t message[data_size + message_OVERHEAD];
+	Serial.println(data_size + MESSAGE_OVERHEAD);
+	uint8_t message[data_size + MESSAGE_OVERHEAD];
 	
 	memcpy(message, header, HEADER_LENGTH);
 	memcpy(message + HEADER_LENGTH, data, data_size);
@@ -103,22 +139,22 @@ uint8_t Nowcom::now_send_msg(uint8_t * addr, uint8_t * data) {
 }
 
 // TODO: put this in a task. Also do some sort of error checking for corrupted message
-uint8_t Nowcom::now_recv_msg(const uint8_t * message, uint8_t * data) {
-	const uint8_t expected_header[HEADER_LENGTH] = MESSAGE_HEADER;
-  const uint8_t expected_footer[FOOTER_LENGTH] = MESSAGE_FOOTER;
-	uint8_t message_size = sizeof(message);
-	uint8_t data_size = message_size - HEADER_LENGTH - FOOTER_LENGTH;
+// uint8_t Nowcom::now_recv_msg(const uint8_t * message, uint8_t * data) {
+// 	const uint8_t expected_header[HEADER_LENGTH] = MESSAGE_HEADER;
+//   const uint8_t expected_footer[FOOTER_LENGTH] = MESSAGE_FOOTER;
+// 	uint8_t message_size = sizeof(message);
+// 	uint8_t data_size = message_size - HEADER_LENGTH - FOOTER_LENGTH;
 	
-	if (memcmp(message, expected_header, HEADER_LENGTH) != 0) {
-    return NOW_ERROR;
-  }
-  if (memcmp(message + HEADER_LENGTH + data_size, expected_footer, FOOTER_LENGTH) != 0) {
-    return NOW_ERROR;
-  }
+// 	if (memcmp(message, expected_header, HEADER_LENGTH) != 0) {
+//     return NOW_ERROR;
+//   }
+//   if (memcmp(message + HEADER_LENGTH + data_size, expected_footer, FOOTER_LENGTH) != 0) {
+//     return NOW_ERROR;
+//   }
 
-  memcpy(data, message + HEADER_LENGTH, data_size);
-	return NOW_OK;
-}
+//   memcpy(data, message + HEADER_LENGTH, data_size);
+// 	return NOW_OK;
+// }
 
 void Nowcom::print_peer_mac_addresses() {
   Serial.printf("Peer MAC addresses: \n");

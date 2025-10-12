@@ -6,7 +6,9 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
-#include <FreeRTOS.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
 
 // For Test
 #include <Arduino.h>
@@ -45,10 +47,10 @@ class Nowcom {
 private:
   uint8_t team_id;
   uint8_t channel;
+  bool is_encrypted = false;
 	uint8_t * data_buffer;
 	uint8_t m_self_mac[MAC_ADDR_LEN];
 	esp_now_peer_info_t m_broadcast;  // Broadcast address FF:FF:FF:FF:FF:FF
-  static * Nowcom my_nowcom;
 
   // NOTE: should probably look over how this works again (Maybe send msg to former peers and make them remove this address)
   // TODO: if a peer switches teams, have a counter that will remove
@@ -67,7 +69,6 @@ private:
   // void drop_unused_peers();
 	
 public:
-  Nowcom();
 
   // Start WiFi station and register callbacks
 	uint8_t now_init();
@@ -75,15 +76,18 @@ public:
   // Get own device's MAC address
 	const uint8_t * get_self_mac();
 
+  // Set whether or not communication is encrypted
+  void set_encryption(bool is_encrypted);
+
   // Set game channel (changes wifi channel)
   void set_channel(uint8_t channel);
 
   // Set player's team ID
-  void set_team(uint8_t team);
+  void set_team(uint8_t team_id);
 
   // Send/receive
 	uint8_t now_send_msg(uint8_t * addr, uint8_t * data);
-	uint8_t now_recv_msg(const uint8_t * msg, uint8_t * data);
+	// uint8_t now_recv_msg(const uint8_t * msg, uint8_t * data);
 
   // Print mac addresses of connected peers (for debugging)
   void print_peer_mac_addresses();
