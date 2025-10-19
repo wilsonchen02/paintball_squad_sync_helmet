@@ -1,65 +1,62 @@
 #include "espnow.h"
 
+const uint8_t broadcast_addr[MAC_ADDR_LENGTH] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
 // Initialization of static members
-espnow * espnow::m_instance = NULL;
-SemaphoreHandle_t espnow::m_parse_packet_semaphore = NULL;
+esp_now_peer_info_t espnow::m_broadcast_peer; // For some strange reasons, it must be static
+SemaphoreHandle_t espnow::m_parse_packet_semaphore;
+SemaphoreHandle_t espnow::m_data_process_semaphore;
 uint8_t espnow::m_packet_buffer[PACKET_LENGTH] = {0};
 uint8_t espnow::m_packet_len = 0;
 
-// PUBLIC
 /**
  * @brief Constructor
  * 
  * @param channel Team channel set by button interface
  */
 espnow::espnow(uint8_t channel) {
-  m_instance = this;
   m_channel = channel;
   m_parse_packet_semaphore = xSemaphoreCreateBinary();
+  m_data_process_semaphore = xSemaphoreCreateBinary();
 }
 
 /**
  * @brief ESP-NOW initialization
- * 
- * @return Operation status
  */
-uint8_t espnow::espnow_init() {
+void espnow::espnow_init() {
   // Create a task for parsing received packet
   xTaskCreate(
-    task_parse_packet, 
-    "task_parse_packet", 
+    parse_packet_task, 
+    "parse_packet_task", 
     8192, 
     NULL, 
     1, 
     NULL);
+  
+  xTaskCreate(
+    process_data_task, 
+    "process_data_task", 
+    4096, 
+    NULL, 
+    2, 
+    NULL);
 
-  // Generate unique device ID from MAC address
-  uint8_t mac[MAC_ADDR_LENGTH];
-  WiFi.macAddress(mac);
-  m_device_id_h = mac[MAC_ADDR_LENGTH - 2];
-  m_device_id_l = mac[MAC_ADDR_LENGTH - 1];
+  WiFi.mode(WIFI_STA);
 
   // ESP-NOW initialization and register callback function
-  WiFi.mode(WIFI_STA);
-  if (esp_now_init() == ESP_OK) {
-    esp_now_register_send_cb(send_data_cb);
-    esp_now_register_recv_cb(recv_data_cb);
-
-    // Broadcast initialization
-    esp_now_peer_info_t broadcast;
-    uint8_t broadcast_addr[MAC_ADDR_LENGTH] = BROADCAST_ADDR;
-    memcpy(broadcast.peer_addr, broadcast_addr, MAC_ADDR_LENGTH);
-    broadcast.channel = m_channel;
-    broadcast.encrypt = BROADCAST_ENCRYPT_FALSE;
-
-    if (esp_now_add_peer(&broadcast) == ESP_OK) {
-      return ESPNOW_OK;
-    }
-
-    return ESPNOW_ERROR;
+  while (esp_now_init() != ESP_OK) {
+    vTaskDelay(pdMS_TO_TICKS(100));
   }
+  esp_now_register_send_cb(send_data_cb);
+  esp_now_register_recv_cb(recv_data_cb);
 
-  return ESPNOW_ERROR;
+  // Broadcast initialization
+  m_broadcast_peer.channel = m_channel;
+  m_broadcast_peer.encrypt = BROADCAST_ENCRYPT_FALSE;
+  memcpy(m_broadcast_peer.peer_addr, broadcast_addr, MAC_ADDR_LENGTH);
+  while (esp_now_add_peer(&m_broadcast_peer) != ESP_OK) {
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
 }
 
 /**
@@ -69,64 +66,86 @@ uint8_t espnow::espnow_init() {
  * 
  * @param data Data to be sent
  * 
- * @param payload Length of data field
+ * @param payload_len Length of data field
  * 
  * @return Operation status
  */
-uint8_t espnow::espnow_send_data(uint8_t data_type, const uint8_t * data, uint8_t payload) {
+uint8_t espnow::espnow_send_data(uint8_t data_type, const uint8_t * data, uint8_t payload_len) {
   espnow_packet packet;
   packet.header = PACKET_HEADER;
-  packet.length = payload + PACKET_DESCRIPTOR_LENGTH;
-  packet.sender_id_h = m_device_id_h;
-  packet.sender_id_l = m_device_id_l;
+  packet.length = payload_len + PACKET_DESCRIPTOR_LENGTH;
   packet.data_type = data_type;
   memset(packet.data, 0, MAX_PAYLOAD_LENGTH); // Initialize the data field
-  memcpy(packet.data, data, payload);
+  memcpy(packet.data, data, payload_len);
   packet.checksum = compute_checksum(((uint8_t *)&packet) + PACKET_PREAMBLE_LENGTH, packet.length);
 
-  uint8_t broadcast_addr[MAC_ADDR_LENGTH] = BROADCAST_ADDR;
   if (esp_now_send(broadcast_addr, (uint8_t *)&packet, PACKET_LENGTH) == ESP_OK) {
     return ESPNOW_OK;
   }
-
-  return ESPNOW_ERROR;
+  else {
+    return ESPNOW_ERROR;
+  }
 }
 
-// PRIVATE FUNCTIONS
 /**
  * @brief Task function for parsing packet
  */
-void espnow::task_parse_packet(void* pvParameters) {
+void espnow::parse_packet_task(void* pvParameters) {
   for (;;) {
     if (xSemaphoreTake(m_parse_packet_semaphore, portMAX_DELAY) == pdTRUE) {
+      // Verify packet length to avoid potential array index out-of-bounds exception
+      if(m_packet_len != PACKET_LENGTH) {
+        continue;
+      }
+
       // Verify header
-      if (m_packet_buffer[0] != PACKET_HEADER) {
+      if (m_packet_buffer[PACKET_HEADER_FIELD_INDEX] != PACKET_HEADER) {
         continue;
       }
 
       // Verify checksum
-      uint8_t checksum_computed = compute_checksum(m_packet_buffer + PACKET_PREAMBLE_LENGTH, m_packet_buffer[1]);
-      if (m_packet_buffer[m_packet_len - 1] != checksum_computed) {
+      uint8_t checksum_computed = compute_checksum(m_packet_buffer + PACKET_PREAMBLE_LENGTH, 
+                                                  m_packet_buffer[PACKET_LENGTH_FIELD_INDEX]);
+      if (m_packet_buffer[PACKET_CHECKSUM_FIELD_INDEX] != checksum_computed) {
         continue;
       }
 
-      // Parse packet
-      uint8_t payload = m_packet_buffer[1] - PACKET_DESCRIPTOR_LENGTH;
-      uint8_t data_type = m_packet_buffer[4];
-      uint8_t * data = (uint8_t*)malloc(payload);
+      xSemaphoreGive(m_data_process_semaphore);
+    }
+  }
+}
+
+/**
+ * @brief Task function for processing data
+ */
+void espnow::process_data_task(void* pvParameters) {
+  for (;;) {
+    if (xSemaphoreTake(m_data_process_semaphore, portMAX_DELAY) == pdTRUE) {
+      // Get data
+      uint8_t payload_len = m_packet_buffer[PACKET_LENGTH_FIELD_INDEX] - PACKET_DESCRIPTOR_LENGTH;
+      uint8_t data_type = m_packet_buffer[PACKET_DATATYPE_FIELD_INDEX];
+      uint8_t * data = (uint8_t*)malloc(payload_len);
       if (data == NULL) {
         continue;
-      }
-      else {
-        memcpy(data, m_packet_buffer + PACKET_PREAMBLE_LENGTH + PACKET_DESCRIPTOR_LENGTH, payload);
+      }      
+      memcpy(data, m_packet_buffer + PACKET_PREAMBLE_LENGTH + PACKET_DESCRIPTOR_LENGTH, payload_len);
 
-        // For Milestone 1 demo only
-        espnow_demo_ms1(data_type, data, payload);
-        
-        if (data != NULL) {
-          free(data);
-          data = NULL;
-        }
+      switch (data_type) {
+        case 0x01:
+          // For test only
+          demo_ms1_espnow_print(data_type + 9, data, payload_len);
+          break;
+        case 0x02:
+          // For test only
+          demo_ms1_espnow_print(data_type, data, payload_len);
+          break;
+        default:
+          break;
+      }
+      
+      if (data != NULL) {
+        free(data);
+        data = NULL;
       }
     }
   }
@@ -135,14 +154,14 @@ void espnow::task_parse_packet(void* pvParameters) {
 /**
  * @brief Compute checksum
  * 
- * 0xFF - ((sum of bytes from length field to last data byte) & 0xFF)
+ * 0xFF - ((sum of bytes from datatype field to last data byte) & 0xFF)
  * 
  * @return checksum
  */
-uint8_t espnow::compute_checksum(const uint8_t * packet, uint8_t packet_len) {
+uint8_t espnow::compute_checksum(const uint8_t * data, uint8_t data_len) {
   uint16_t sum = 0;
-  for (uint8_t i = 0; i < packet_len; i++) {
-    sum += packet[i];
+  for (uint8_t i = 0; i < data_len; i++) {
+    sum += data[i];
   }
   uint8_t sum_lowest_byte = sum & 0xFF;
   return 0xFF - sum_lowest_byte;
@@ -169,14 +188,4 @@ void espnow::recv_data_cb(const esp_now_recv_info_t * recv_info, const uint8_t *
   m_packet_len = packet_len;
 
   xSemaphoreGive(m_parse_packet_semaphore);
-}
-
-void espnow::espnow_demo_ms1(uint8_t data_type, const uint8_t * data, uint8_t payload) {
-  Serial.begin(115200);
-  Serial.printf("DT: %d\n", data_type);
-  Serial.printf("D: ");
-  for (int i = 0; i < payload; i++) {
-    Serial.printf("%2X", data[i]);
-  }
-  Serial.println();
 }
