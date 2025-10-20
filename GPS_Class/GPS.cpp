@@ -43,9 +43,9 @@ bool GPS::isConnected() const {
 void GPS::printInfo() {
     Serial.print(F("Location: "));
     if (gps.location.isValid()) {
-        Serial.print(gps.location.lat(), 6);
+        Serial.print(gps.location.lat(), 10);
         Serial.print(F(","));
-        Serial.print(gps.location.lng(), 6);
+        Serial.print(gps.location.lng(), 10);
     } else {
         Serial.print(F("INVALID"));
     }

@@ -18,12 +18,8 @@ void loop() {
   double lat = gps.getLatitude();
   double lng = gps.getLongitude();
 
-  gps.printInfo();
-
-  // Serial.print("Lat: ");
-  // Serial.print(lat);
-  // Serial.print("  Lng: ");
-  // Serial.println(lng);
-
-  delay(100);
+  //  Serial.print("Lat: ");
+  //  Serial.print(lat, 10);
+  //  Serial.print("  Lng: ");
+  //  Serial.println(lng, 10);
 }
