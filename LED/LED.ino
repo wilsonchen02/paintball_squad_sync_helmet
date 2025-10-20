@@ -28,21 +28,32 @@ void setup() {
   gs.addMate(mac2, -1.5, 5);
   gs.addMate(mac3, 10, 7);
 
+
   gs.setLED(44, 0, 0, 255); //right limit
   gs.setLED(0, 0, 0, 255); //left limit
   gs.show();
-  gs.addMarker(-2, 2, -1);
-  gs.addObjective(0, 20);
-  gs.addMarker(50, 50 , -1);
-  gs.addObjective(10, -20); //wont show because it's behind you!
+
 
   gs.showMap();
   delay(1000);
-  gs.addSOS(mac2);
+  gs.mateSOS(mac1);
+  gs.showMap();
+
+  delay(1000);
+  gs.clearSOS();
+
+  
+  gs.showMap();
+  delay(1000);
+  gs.mateEngaged(mac1);
+
   gs.showMap();
 
 
-
+  // gs.addMarker(-2, 2, -1);
+  // gs.addObjective(0, 20);
+  // gs.addMarker(50, 50 , -1);
+  // gs.addObjective(10, -20); //wont show because it's behind you!
 }
 
 void loop() {

@@ -11,12 +11,33 @@
 #define BLINK_SPEED 100 //ms
 
 #define MATE_ELEM 0
-#define MARKER_ELEM 1
-#define OBJECTIVE_ELEM 2
-#define SOS_ELEM 3
+#define OBJECTIVE_ELEM 1
+#define MARKER_ELEM 2
+
+#define MATE_TTL 3000 //refresh TTL to be change
+
+//COLORS
+typedef struct {
+    int r;
+    int g;
+    int b;
+} Color;
+
+#define COLOR_MATE       ((Color){0,   255, 0})
+#define COLOR_SOS        ((Color){0,   0,   255})
+#define COLOR_ENGAGED    ((Color){255, 55,  0})
+#define COLOR_OBJECTIVE  ((Color){255, 255, 0})
+#define COLOR_MARKER     ((Color){255, 0,   0})
+#define COLOR_ELIMINATED ((Color){255, 255, 255})
+#define COLOR_DEFAULT    ((Color){255, 0, 255})
+
+#define TIME_ENGAGED 10000 //ms
 
 #define MAX_DISTANCE 100
 #define MIN_DISTANCE 0.01
+
+
+
 
 
 struct MapElement {
@@ -26,21 +47,27 @@ struct MapElement {
   uint8_t r, g, b;
   uint32_t ttl;
   uint32_t lastUpdate;
+  int32_t engagedUntil;
 
   // Constructor
-  MapElement(const uint8_t mac[6], uint8_t t, float x, float y, int32_t ttl)
-    : type(t), x(x), y(y), ttl(ttl), lastUpdate(millis()) //ttl=-1 for infinite
-  {
-    memcpy(macAddr, mac, 6);  // copy the MAC address
+MapElement(const uint8_t mac[6], uint8_t t, float x, float y, int32_t ttl)
+  : type(t), x(x), y(y), ttl(ttl), lastUpdate(millis()), engagedUntil(0)
+{
+    memcpy(macAddr, mac, 6);
+
+    Color color;
 
     switch (type) {
-      case MATE_ELEM:        r = 0;   g = 255; b = 0;   break; // Green
-      case MARKER_ELEM:      r = 255; g = 0;   b = 0;   break; // Red
-      case OBJECTIVE_ELEM:   r = 255; g = 255; b = 0; break; // Yellow
-      case SOS_ELEM:         r = 255; g = 0;   b = 255; break; // Purple
-      default:               r = 255; g = 255; b = 255; break; // White
+      case MATE_ELEM:       color = COLOR_MATE; break;
+      case MARKER_ELEM:     color = COLOR_MARKER; break;
+      case OBJECTIVE_ELEM:  color = COLOR_OBJECTIVE; break;
+      default:              color = COLOR_DEFAULT; break;
     }
-  }
+
+    r = color.r;
+    g = color.g;
+    b = color.b;
+}
 
   bool matchesMac(const uint8_t otherMac[6]) const {
     return memcmp(macAddr, otherMac, 6) == 0;
@@ -51,6 +78,8 @@ struct MapElement {
     return (now - lastUpdate) >= ttl;
   }
 };
+
+
 
 
 class GuidanceStrip {
@@ -74,7 +103,11 @@ public:
   void addMate(uint8_t mac[6], float x, float y);
   void addMarker(float x, float y, int32_t ttl);
   void addObjective(float x, float y);
-  void addSOS(uint8_t mac[6]);
+
+  void mateEngaged(uint8_t mac[6]);
+  void mateEliminated(uint8_t mac[6]);
+  void mateSOS(uint8_t mac[6]);
+  void clearSOS();
   void showMap();
 
 //        +Y (dy > 0)

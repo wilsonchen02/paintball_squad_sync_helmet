@@ -117,13 +117,37 @@ void GuidanceStrip::addMate(uint8_t mac[6], float x, float y) {
       //Update position
       elem.x = x;
       elem.y = y;
-      elem.ttl = 3000;  //refresh TTL to be change
+      elem.ttl = MATE_TTL;
       return;      
     }
   }
 
   // If not found, create a new one
   mapElems.emplace_back(mac, MATE_ELEM, x, y, 5000);
+}
+
+void GuidanceStrip::mateEngaged(uint8_t mac[6]) {
+  for (auto &elem : mapElems) {
+    if (elem.matchesMac(mac)) {
+      Color c = COLOR_ENGAGED;
+      elem.r = c.r;
+      elem.g = c.g;
+      elem.b = c.b;
+      elem.engagedUntil = millis() + TIME_ENGAGED;
+      return;
+    }
+  }
+}
+
+void GuidanceStrip::mateEliminated(uint8_t mac[6]) {
+  for (auto &elem : mapElems) {
+    if (elem.matchesMac(mac)) {
+      Color c = COLOR_ELIMINATED;
+      elem.r = c.r;
+      elem.g = c.g;
+      elem.b = c.b;
+    }
+  }
 }
 
 
@@ -137,15 +161,45 @@ void GuidanceStrip::addObjective(float x, float y) {
     mapElems.emplace_back(zeroMac, OBJECTIVE_ELEM, x, y, -1);
 }
 
-void GuidanceStrip::addSOS(uint8_t mac[6]) {
+void GuidanceStrip::mateSOS(uint8_t mac[6]) {
   for (auto &elem : mapElems) {
     if (elem.matchesMac(mac)) {
-      // update color
-      //elem.type = SOS_ELEM;
-      elem.r = 255;
+      Color c = COLOR_SOS;
+      elem.r = c.r;
+      elem.g = c.g;
+      elem.b = c.b;
+    }
+    else {
+      //hide all other elems
+      elem.r = 0;
       elem.g = 0;
-      elem.b = 255;
-      return;
+      elem.b = 0;
+    }
+  }
+}
+
+void GuidanceStrip::clearSOS() {
+  for (auto &elem : mapElems) {
+    if (elem.type == MATE_ELEM) {
+      // update color
+      Color c = COLOR_MATE;
+      elem.r = c.r;
+      elem.g = c.g;
+      elem.b = c.b;
+    }
+    if (elem.type == OBJECTIVE_ELEM) {
+      // update color
+      Color c = COLOR_OBJECTIVE;
+      elem.r = c.r;
+      elem.g = c.g;
+      elem.b = c.b;
+    }
+    if (elem.type == MARKER_ELEM) {
+      // update color
+      Color c = COLOR_MARKER;
+      elem.r = c.r;
+      elem.g = c.g;
+      elem.b = c.b;
     }
   }
 }
@@ -241,7 +295,9 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
           break;
         }
         case STATE_GUIDANCE: {
-          //TODO: signal that I am out of the game
+          //signal that I am out of the game
+          //TODO: sends a message that will result in mateEliminated(mac) being called for others
+          setState(STATE_GAME_SELECT); //returns to game select screen, ending msg sends and eventually ttl goes to 0
           break;
         }
       }
@@ -265,7 +321,8 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
           break;
         }
         case STATE_GUIDANCE: {
-          //TODO: signal that I am out of the game
+          //signal that I am engaged
+          //TODO: sends a message that will result in mateEngaged(mac) being called for others
           break;
         }
       }
@@ -286,10 +343,23 @@ void GuidanceStrip::update() {
   // time to live - remove expired elements
   uint32_t now = millis();
 
+
+  // remove expired elements
   for (auto it = mapElems.begin(); it != mapElems.end(); ) {
     if (it->expired(now)) {
       it = mapElems.erase(it);
-    } else {
+    } 
+    else {
+      // check if engagement should be reverted
+      if (it->engagedUntil != 0 && now >= it->engagedUntil) {
+        it->engagedUntil = 0;
+        if (it->type == MATE_ELEM) {
+          Color c = COLOR_MATE;
+          it->r = c.r;
+          it->g = c.g;
+          it->b = c.b;
+        }
+      }
       ++it;
     }
   }
@@ -304,7 +374,7 @@ void GuidanceStrip::update() {
     }
 
     case STATE_TEAM_SELECT: {
-      // Convert the 4 section color indices into a single "value" like base-4
+      // Convert the 4 section color indices into a single value like base-4
       // e.g. colors = {0,1,3,0} → value = 0b00 11 01 00 (base-4)
       showSelector(4, teamSelectorColors, teamSelectorPos);
       break;
