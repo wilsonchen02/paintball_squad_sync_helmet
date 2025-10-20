@@ -1,5 +1,5 @@
 #include "../LED/GuidanceStrip.cpp"
-#include "../compass_BNO085/IMUHeading.cpp"
+#include "../IMU_UART/IMU_UART.cpp"
 
 
 #define LED_PIN   6
@@ -14,7 +14,7 @@
 
 GuidanceStrip gs(LED_COUNT, LED_PIN, DEFAULT_BRIGHTNESS);
 
-IMUHeading imu(SDA_PIN, SCL_PIN, BNO08X_RESET);
+IMU_UART imu(17, 18, 0); // RX, TX, initial yaw offset
 
 uint8_t mac1[6] = {1, 1, 1, 1, 1, 1};
 
@@ -24,11 +24,14 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
 
+  Serial.println("Starting IMU...");
+
   if (!imu.begin()) {
-    Serial.println("Failed to init BNO08x");
+    Serial.println("Failed to find BNO08x!");
     while (1) delay(10);
   }
-  Serial.println("BNO08x ready.");
+
+  Serial.println("IMU initialized.");
 
 
   //----------- GUIDANCE STRIP SETUP -----------
@@ -45,7 +48,7 @@ void setup() {
 float mate_x = 0;
 float mate_speed = 0.01;
 int mate_dir = 1;  // 1 = forward, -1 = backward
-
+float heading = 0;
 void loop() {
   //mate walking back and forth
   mate_x += mate_speed * mate_dir;
@@ -60,7 +63,9 @@ void loop() {
   
   gs.addMate(mac1, mate_x, 7);
   
-  imu.update();
-  gs.setLocation(0, 0, imu.getHeading());
+  if(imu.read())
+    heading = imu.getHeading();
+  gs.setLocation(0, 0, heading);
+  
   gs.update();
 }
