@@ -7,6 +7,6 @@
 // ESP-NOW MS1 Demo
 void demo_ms1_setup();
 void demo_ms1_task(void *pvParameters);
-void demo_ms1_espnow_print(uint8_t data_type, const uint8_t * data, uint8_t payload_len);
+void demo_ms1_espnow_print(const uint8_t * data, uint8_t payload_len);
 
 #endif

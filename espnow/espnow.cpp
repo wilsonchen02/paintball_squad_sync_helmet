@@ -3,21 +3,20 @@
 const uint8_t broadcast_addr[MAC_ADDR_LENGTH] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // Initialization of static members
-esp_now_peer_info_t espnow::m_broadcast_peer; // For some strange reasons, it must be static
-SemaphoreHandle_t espnow::m_parse_packet_semaphore;
-SemaphoreHandle_t espnow::m_data_process_semaphore;
-uint8_t espnow::m_packet_buffer[PACKET_LENGTH] = {0};
-uint8_t espnow::m_packet_len = 0;
+uint8_t espnow::m_team_id = 0;
+esp_now_peer_info_t espnow::m_broadcast_peer = {0}; // For some strange reasons, it must be static?
+QueueHandle_t espnow::m_rx_queue = NULL;
+uint8_t espnow::m_last_sender_mac[MAC_ADDR_LENGTH] = {0};
 
 /**
  * @brief Constructor
  * 
  * @param channel Team channel set by button interface
  */
-espnow::espnow(uint8_t channel) {
+espnow::espnow(uint8_t channel, uint8_t team_id) {
   m_channel = channel;
-  m_parse_packet_semaphore = xSemaphoreCreateBinary();
-  m_data_process_semaphore = xSemaphoreCreateBinary();
+  m_team_id = team_id;
+  m_rx_queue = xQueueCreate(10, sizeof(espnow_rx_packet));
 }
 
 /**
@@ -31,14 +30,6 @@ void espnow::espnow_init() {
     8192, 
     NULL, 
     1, 
-    NULL);
-  
-  xTaskCreate(
-    process_data_task, 
-    "process_data_task", 
-    4096, 
-    NULL, 
-    2, 
     NULL);
 
   WiFi.mode(WIFI_STA);
@@ -74,6 +65,7 @@ uint8_t espnow::espnow_send_data(uint8_t data_type, const uint8_t * data, uint8_
   espnow_packet packet;
   packet.header = PACKET_HEADER;
   packet.length = payload_len + PACKET_DESCRIPTOR_LENGTH;
+  packet.team_id = m_team_id;
   packet.data_type = data_type;
   memset(packet.data, 0, MAX_PAYLOAD_LENGTH); // Initialize the data field
   memcpy(packet.data, data, payload_len);
@@ -91,53 +83,54 @@ uint8_t espnow::espnow_send_data(uint8_t data_type, const uint8_t * data, uint8_
  * @brief Task function for parsing packet
  */
 void espnow::parse_packet_task(void* pvParameters) {
+  espnow_rx_packet rx_pkt = {0};
+
   for (;;) {
-    if (xSemaphoreTake(m_parse_packet_semaphore, portMAX_DELAY) == pdTRUE) {
+    // block on the queue until a new packet arrives (queue is the synch mechanism)
+    if (xQueueReceive(m_rx_queue, &rx_pkt, portMAX_DELAY) == pdTRUE) {
       // Verify packet length to avoid potential array index out-of-bounds exception
-      if(m_packet_len != PACKET_LENGTH) {
+      if (rx_pkt.packet_len != PACKET_LENGTH) {
+        continue;
+      }
+
+      // Verify team
+      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != m_team_id) {
         continue;
       }
 
       // Verify header
-      if (m_packet_buffer[PACKET_HEADER_FIELD_INDEX] != PACKET_HEADER) {
+      if (rx_pkt.packet[PACKET_HEADER_FIELD_INDEX] != PACKET_HEADER) {
         continue;
       }
 
       // Verify checksum
-      uint8_t checksum_computed = compute_checksum(m_packet_buffer + PACKET_PREAMBLE_LENGTH, 
-                                                  m_packet_buffer[PACKET_LENGTH_FIELD_INDEX]);
-      if (m_packet_buffer[PACKET_CHECKSUM_FIELD_INDEX] != checksum_computed) {
+      uint8_t checksum_computed = compute_checksum(rx_pkt.packet + PACKET_PREAMBLE_LENGTH, 
+                                                  rx_pkt.packet[PACKET_LENGTH_FIELD_INDEX]);
+      if (rx_pkt.packet[PACKET_CHECKSUM_FIELD_INDEX] != checksum_computed) {
         continue;
       }
 
-      xSemaphoreGive(m_data_process_semaphore);
-    }
-  }
-}
-
-/**
- * @brief Task function for processing data
- */
-void espnow::process_data_task(void* pvParameters) {
-  for (;;) {
-    if (xSemaphoreTake(m_data_process_semaphore, portMAX_DELAY) == pdTRUE) {
       // Get data
-      uint8_t payload_len = m_packet_buffer[PACKET_LENGTH_FIELD_INDEX] - PACKET_DESCRIPTOR_LENGTH;
-      uint8_t data_type = m_packet_buffer[PACKET_DATATYPE_FIELD_INDEX];
+      uint8_t payload_len = rx_pkt.packet[PACKET_LENGTH_FIELD_INDEX] - PACKET_DESCRIPTOR_LENGTH;
+      message_type data_type = (message_type)rx_pkt.packet[PACKET_DATATYPE_FIELD_INDEX];
       uint8_t * data = (uint8_t*)malloc(payload_len);
       if (data == NULL) {
         continue;
-      }      
-      memcpy(data, m_packet_buffer + PACKET_PREAMBLE_LENGTH + PACKET_DESCRIPTOR_LENGTH, payload_len);
+      }
+      memcpy(data, rx_pkt.packet + PACKET_PREAMBLE_LENGTH + PACKET_DESCRIPTOR_LENGTH, payload_len);
 
       switch (data_type) {
-        case 0x01:
-          // For test only
-          demo_ms1_espnow_print(data_type + 9, data, payload_len);
+        case message_type::Location:
+          // === For test only ===
+          demo_ms1_espnow_print(data, payload_len);
           break;
-        case 0x02:
-          // For test only
-          demo_ms1_espnow_print(data_type, data, payload_len);
+        case message_type::Engaged:
+          // === For test only ===
+          demo_ms1_espnow_print(data, payload_len);
+          break;
+        case message_type::SOS:
+          break;
+        case message_type::ClearSOS:
           break;
         default:
           break;
@@ -184,8 +177,10 @@ void espnow::send_data_cb(const esp_now_send_info_t * send_info, esp_now_send_st
  * @param packet_len Length of received data
  */
 void espnow::recv_data_cb(const esp_now_recv_info_t * recv_info, const uint8_t * packet, int packet_len) {
-  memcpy(m_packet_buffer, packet, packet_len);
-  m_packet_len = packet_len;
+  espnow_rx_packet rx_pkt;
+  memcpy(rx_pkt.sender_mac, recv_info->src_addr, MAC_ADDR_LENGTH);   // Copy sender MAC address from recv_info structure
+  memcpy(rx_pkt.packet, packet, packet_len);
+  rx_pkt.packet_len = packet_len;
 
-  xSemaphoreGive(m_parse_packet_semaphore);
+  xQueueSend(m_rx_queue, &rx_pkt, pdMS_TO_TICKS(ESPNOW_MAXDELAY));
 }

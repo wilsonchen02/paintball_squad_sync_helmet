@@ -1,6 +1,7 @@
 #include "test.h"
 
-espnow now(0);
+// Channel 0, Team 10
+espnow now(0, 10);
 
 /**
  * @brief Setup function
@@ -48,9 +49,8 @@ void demo_ms1_task(void *pvParameters) {
  * 
  * @param payload_len
  */
-void demo_ms1_espnow_print(uint8_t data_type, const uint8_t * data, uint8_t payload_len) {
+void demo_ms1_espnow_print(const uint8_t * data, uint8_t payload_len) {
   Serial.begin(115200);
-  Serial.printf("%2X: ", data_type);
   for (int i = 0; i < payload_len; i++) {
     Serial.printf("%2X", data[i]);
   }
