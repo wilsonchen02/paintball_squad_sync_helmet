@@ -15,7 +15,7 @@
 #define PACKET_CHECKSUM_LENGTH 1 // Length of checksum
 #define PACKET_OVERHEAD_LENGTH (PACKET_PREAMBLE_LENGTH + PACKET_DESCRIPTOR_LENGTH + \
                                 PACKET_CHECKSUM_LENGTH) // Length of overhead, excluding the data field
-#define MAX_PAYLOAD_LENGTH (2 * sizeof(locdt) + 2) // 2 locdata elements (lat, lon) + 2 redundant bytes
+#define MAX_PAYLOAD_LENGTH (2 * sizeof(locdt)) // 2 locdata elements (lat, lon) + 2 redundant bytes
 #define PACKET_LENGTH (MAX_PAYLOAD_LENGTH + PACKET_OVERHEAD_LENGTH) // Length of packet
 
 #define PACKET_HEADER_FIELD_INDEX 0
