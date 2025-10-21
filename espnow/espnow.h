@@ -3,7 +3,6 @@
 
 #include <WiFi.h>
 #include <esp_now.h>
-#include "test.h" // NOTE: Should be removed for release version
 
 // Operation Status
 #define ESPNOW_OK 0
@@ -73,7 +72,7 @@ class espnow {
 public:
   espnow(uint8_t channel, uint8_t team_id);
   void espnow_init();
-  uint8_t espnow_send_data(uint8_t data_type, const uint8_t * data, uint8_t payload_len);
+  uint8_t espnow_send_data(message_type data_type, const uint8_t * data, uint8_t payload_len);
 
 private:
   uint8_t m_channel;

@@ -61,12 +61,12 @@ void espnow::espnow_init() {
  * 
  * @return Operation status
  */
-uint8_t espnow::espnow_send_data(uint8_t data_type, const uint8_t * data, uint8_t payload_len) {
+uint8_t espnow::espnow_send_data(message_type data_type, const uint8_t * data, uint8_t payload_len) {
   espnow_packet packet;
   packet.header = PACKET_HEADER;
   packet.length = payload_len + PACKET_DESCRIPTOR_LENGTH;
   packet.team_id = m_team_id;
-  packet.data_type = data_type;
+  packet.data_type = (uint8_t)data_type;
   memset(packet.data, 0, MAX_PAYLOAD_LENGTH); // Initialize the data field
   memcpy(packet.data, data, payload_len);
   packet.checksum = compute_checksum(((uint8_t *)&packet) + PACKET_PREAMBLE_LENGTH, packet.length);
@@ -122,11 +122,17 @@ void espnow::parse_packet_task(void* pvParameters) {
       switch (data_type) {
         case message_type::Location:
           // === For test only ===
-          demo_ms1_espnow_print(data, payload_len);
+          Serial.begin(115200);
+          locdata loc;
+          memcpy(&loc, (locdata *)data, payload_len);
+          Serial.printf("%.2f %.2f\n", loc.lat, loc.lon);
           break;
         case message_type::Engaged:
           // === For test only ===
-          demo_ms1_espnow_print(data, payload_len);
+          for (int i = 0; i < payload_len; i++) {
+            Serial.printf("%2X", data[i]);
+          }
+          Serial.println();
           break;
         case message_type::SOS:
           break;
