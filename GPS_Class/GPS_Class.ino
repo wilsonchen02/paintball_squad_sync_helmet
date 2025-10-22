@@ -18,8 +18,6 @@ void loop() {
   double lat = gps.getLatitude();
   double lng = gps.getLongitude();
 
-  //  Serial.print("Lat: ");
-  //  Serial.print(lat, 10);
-  //  Serial.print("  Lng: ");
-  //  Serial.println(lng, 10);
+  double avgLat = gps.getAverageLatitude();
+  double avgLng = gps.getAverageLongitude();
 }

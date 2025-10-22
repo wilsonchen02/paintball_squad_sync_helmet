@@ -4,27 +4,94 @@
 GPS::GPS(int rxPin, int txPin, uint32_t baud)
     : ss(rxPin, txPin), rxPin(rxPin), txPin(txPin), gpsBaud(baud), lastPrint(0) {}
 
+
+
+void GPS::printGPSResponse(unsigned long timeout_ms) {
+    unsigned long start = millis();
+    Serial.println(F("Listening for GPS response..."));
+    while (millis() - start < timeout_ms) {
+        while (ss.available()) {
+            char c = ss.read();
+            Serial.write(c);
+        }
+    }
+    Serial.println();
+}
+
+void GPS::addReading(double lat, double lon) {
+    latBuffer[bufferIndex] = lat;
+    lonBuffer[bufferIndex] = lon;
+    bufferIndex = (bufferIndex + 1) % GPS_AVG_COUNT;
+
+    if (bufferSize < GPS_AVG_COUNT) {
+        bufferSize++;
+    }
+}
+double GPS::getAverageLatitude() {
+    if (bufferSize == 0) return 444.0; // no valid data
+    double sum = 0;
+    for (int i = 0; i < bufferSize; i++) {
+        sum += latBuffer[i];
+    }
+    return sum / bufferSize;
+}
+
+double GPS::getAverageLongitude() {
+    if (bufferSize == 0) return 444.0; // no valid data
+    double sum = 0;
+    for (int i = 0; i < bufferSize; i++) {
+        sum += lonBuffer[i];
+    }
+    return sum / bufferSize;
+}
+
+
 void GPS::begin() {
-    Serial.println("Starting GPS connection at default 9600 baud...");
+    Serial.println(F("Starting GPS connection at default 9600 baud..."));
     ss.begin(9600);
     delay(1000);
 
-    Serial.println("Sending command to change GPS baud rate to 57600...");
+    // Change baud rate to 57600
+    Serial.println(F("Sending command to change GPS baud rate to 57600..."));
     ss.print("$PMTK251,57600*2C\r\n");
     delay(250);
 
-    Serial.println("Re-initializing Arduino serial port to 57600 baud...");
+    Serial.println(F("Re-initializing Arduino serial port to 57600 baud..."));
     ss.begin(gpsBaud);
+    delay(250); // Let module settle
 
-    Serial.println("Sending command to set update rate to 10Hz (100ms)...");
-    ss.print("$PMTK220,100*2F\r\n");
+    // SBAS requires <= 5 Hz
+    Serial.println(F("Setting update rate to 5Hz (200ms)..."));
+    ss.print("$PMTK220,200*2C\r\n");
+    //printGPSResponse(800);
+
+    // Enable SBAS (WAAS/EGNOS/MSAS)
+    Serial.println(F("Enabling SBAS..."));
+    ss.print("$PMTK313,1*2E\r\n");
+    //printGPSResponse(1000);
+
+    Serial.println(F("GPS initialization complete."));
 }
 
 void GPS::update() {
     while (ss.available() > 0) {
         if (gps.encode(ss.read())) {
-            if (millis() - lastPrint > 100) {
+            // If the GPS location is valid, add it to the rolling buffer
+            if (gps.location.isValid()) {
+                addReading(gps.location.lat(), gps.location.lng());
+            }
+
+            // Print info every 200 ms as before
+            if (millis() - lastPrint > 200) {
+                Serial.println("---------------");
+
                 printInfo();
+
+                Serial.print("Average Location: ");
+                Serial.print(getAverageLatitude(), 10);
+                Serial.print(", ");
+                Serial.println(getAverageLongitude(), 10);
+
                 lastPrint = millis();
             }
         }
