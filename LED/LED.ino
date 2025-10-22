@@ -56,31 +56,31 @@ void setup() {
   // gs.addObjective(10, -20); //wont show because it's behind you!
 }
 
-void loop() {
-  //gs.update();
-}
-
-// //simulate input sequence
-// unsigned long lastInputTime = 0;
-// int inputStep = 0;
-// unsigned long inputIntervals[] = {1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 5000, 5000, 5000};
-// uint8_t inputSequence[] = {1, 1, 1, 2, 0,1,1,1,2,2,2,2,1,0,0};
-// const int totalSteps = sizeof(inputSequence)/sizeof(inputSequence[0]);
-
 // void loop() {
-//   // Always update LEDs to keep blinking alive
-//   gs.update();
-
-//   // Check if it’s time to simulate the next input
-//   unsigned long now = millis();
-//   if (inputStep < totalSteps && now - lastInputTime >= inputIntervals[inputStep]) {
-//     gs.handlePhysicalInput(inputSequence[inputStep]);
-//     lastInputTime = now;
-//     inputStep++;
-//   }
-
-//   delay(10);
+//   //gs.update();
 // }
+
+//simulate input sequence
+unsigned long lastInputTime = 0;
+int inputStep = 0;
+unsigned long inputIntervals[] = {1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 5000, 5000, 5000, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500};
+uint8_t inputSequence[] = {1, 1, 1, 2, 0,1,1,1,2,2,2,2,1,0,0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
+const int totalSteps = sizeof(inputSequence)/sizeof(inputSequence[0]);
+
+void loop() {
+  // Always update LEDs to keep blinking alive
+  gs.update();
+
+  // Check if it’s time to simulate the next input
+  unsigned long now = millis();
+  if (inputStep < totalSteps && now - lastInputTime >= inputIntervals[inputStep]) {
+    gs.handlePhysicalInput(inputSequence[inputStep]);
+    lastInputTime = now;
+    inputStep++;
+  }
+
+  delay(10);
+}
 
 //void loop() {
   // // Example: currentValue = 0b00 11 01 00  -> rrrr pppp bbbb rrrr

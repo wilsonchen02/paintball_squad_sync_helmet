@@ -162,6 +162,7 @@ void GuidanceStrip::addObjective(float x, float y) {
 }
 
 void GuidanceStrip::mateSOS(uint8_t mac[6]) {
+  inSOS = true;
   for (auto &elem : mapElems) {
     if (elem.matchesMac(mac)) {
       Color c = COLOR_SOS;
@@ -179,6 +180,7 @@ void GuidanceStrip::mateSOS(uint8_t mac[6]) {
 }
 
 void GuidanceStrip::clearSOS() {
+  inSOS = false;
   for (auto &elem : mapElems) {
     if (elem.type == MATE_ELEM) {
       // update color
@@ -273,7 +275,7 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
 
   switch (input) {
     case 0: // Mode button cycles states
-      setState((getState() + 1) % 4);
+      setState((getState() + 1) % 3);
       break;
 
     case 1: // Button 1 
@@ -288,7 +290,7 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
           update();
           break;
         }
-        case STATE_BRIGHTNESS: {
+        case STATE_BRIGHTNESS: { //UNUSED
           //TODO: determine reasonable brightness threshold
           brightness += 2;
 
@@ -315,7 +317,7 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
           update();
           break;
         }
-        case STATE_BRIGHTNESS: {
+        case STATE_BRIGHTNESS: { //UNUSED
           //TODO: determine reasonable brightness threshold
           brightness -= 2;
           break;
@@ -327,6 +329,26 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
         }
       }
       break;
+
+      case 3: // Brightness button pressed
+        brightness+=2;
+        if(brightness > 10) brightness = 1;
+        setBrightness(brightness);
+        break;
+
+      case 4: // Button 1 held down
+        switch (state) {
+          case STATE_GUIDANCE: {
+            if(!inSOS) {
+            //TODO: sends a message that will result in mateSOS(mac) being called for others
+            }
+            else {
+              //TODO: sends a message that will result in clearSOS() being called for others
+            }
+            break;
+          }
+        }
+        break;
 
     default:
       // No action
@@ -380,7 +402,7 @@ void GuidanceStrip::update() {
       break;
     }
 
-    case STATE_BRIGHTNESS: {
+    case STATE_BRIGHTNESS: { //UNUSED
       setBrightness(brightness);
       showBrightnessPreview();
       break;
