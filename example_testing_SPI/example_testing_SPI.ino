@@ -52,8 +52,8 @@ BNO080 myIMU;
 
 //These pins can be any GPIO
 byte imuCSPin = 10;
-byte imuWAKPin = 36;
-byte imuINTPin = 9;
+byte imuWAKPin = 35;
+byte imuINTPin = 14;
 byte imuRSTPin = 47;
 
 void setup()
