@@ -10,10 +10,10 @@ void setup() {
   imu.begin();
 
   imu.setCalibration(
-    -45, 88,    // x min/max
-    0, 107,     // y min/max
-    -30, 60,    // z min/max
-    -4, -1       // roll & pitch biases
+    -45, 41,    // x min/max
+    -50, 35,     // y min/max
+    -280, -190,    // z min/max
+    0, 0       // roll & pitch biases
   );
 }
 
@@ -24,7 +24,11 @@ void loop() {
 
   float heading = imu.getHeading();
   Serial.print("  |   Heading: ");
-  Serial.println(heading, 1);
+  Serial.print(heading, 1);
+
+  float avgTCHeading = imu.getAverageHeading();
+  Serial.print("  |   Avg: ");
+  Serial.println(avgTCHeading, 1);
 
   imu.printRawValues();
   

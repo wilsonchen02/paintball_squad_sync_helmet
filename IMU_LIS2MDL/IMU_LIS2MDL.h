@@ -15,7 +15,9 @@ public:
                       float zMin, float zMax,
                       float rollBiasDeg, float pitchBiasDeg);
 
-  float getHeading() const;
+  float getHeading();
+
+  float getAverageHeading();
 
   float getTiltCompensatedHeading();
 
@@ -29,6 +31,12 @@ private:
 
   float rollBias, pitchBias;
 
-  mutable Adafruit_LIS2MDL mag;
-  mutable Adafruit_LSM303_Accel_Unified accel;
+  Adafruit_LIS2MDL mag;
+  Adafruit_LSM303_Accel_Unified accel;
+
+  //avg heading
+  static const int NUM_HEADINGS = 10;
+  float headingHistory[NUM_HEADINGS];
+  int headingIndex = 0;
+  bool headingFilled = false;
 };

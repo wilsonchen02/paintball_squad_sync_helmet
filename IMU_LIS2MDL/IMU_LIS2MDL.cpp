@@ -39,7 +39,7 @@ void IMU_LIS2MDL::setCalibration(float xMin, float xMax,
   pitchBias = pitchBiasDeg * PI / 180.0;
 }
 
-float IMU_LIS2MDL::getHeading() const {
+float IMU_LIS2MDL::getHeading() {
   sensors_event_t magEvent;
   mag.getEvent(&magEvent);
 
@@ -94,6 +94,34 @@ float IMU_LIS2MDL::getTiltCompensatedHeading() {
 
   return heading;
 }
+
+float IMU_LIS2MDL::getAverageHeading() {
+  float currentHeading = getTiltCompensatedHeading();
+
+  // Store the new heading
+  headingHistory[headingIndex] = currentHeading;
+  headingIndex = (headingIndex + 1) % NUM_HEADINGS;
+  if (headingIndex == 0) headingFilled = true;
+
+  int count = headingFilled ? NUM_HEADINGS : headingIndex;
+
+  // --- Average using vector components to avoid wrap-around issues ---
+  float sumSin = 0.0, sumCos = 0.0;
+  for (int i = 0; i < count; i++) {
+    float rad = headingHistory[i] * PI / 180.0;
+    sumSin += sin(rad);
+    sumCos += cos(rad);
+  }
+
+  float avgHeading = atan2(sumSin / count, sumCos / count) * 180.0 / PI;
+
+  // Normalize to -180 to 180
+  if (avgHeading > 180.0) avgHeading -= 360.0;
+  else if (avgHeading < -180.0) avgHeading += 360.0;
+
+  return avgHeading;
+}
+
 
 void IMU_LIS2MDL::printRawValues() {
   sensors_event_t accelEvent, magEvent;
