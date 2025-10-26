@@ -88,8 +88,9 @@ float IMU_LIS2MDL::getTiltCompensatedHeading() {
   if (heading < 0) heading += 360.0;
 
   heading -= yawOffset;
-  if (heading < 0) heading += 360.0;
-  else if (heading >= 360.0) heading -= 360.0;
+  // --- Normalize to –180° to +180° ---
+  if (heading > 180.0)  heading -= 360.0;
+  else if (heading < -180.0) heading += 360.0;
 
   return heading;
 }
