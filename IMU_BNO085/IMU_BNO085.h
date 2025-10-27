@@ -19,10 +19,10 @@ public:
 
   void printRawMagnetic();
 
-  float getYaw()  { return yaw; }
+  //float getYaw()  { return yaw; }
 
 private:
-  void convertQuaternionToEuler(sh2_RotationVectorWAcc_t* rotationVector);
+  float convertQuaternionToEuler(sh2_RotationVectorWAcc_t* rotationVector);
   float computeMagHeading(float mx, float my);
 
   HardwareSerial* serial;
@@ -32,7 +32,8 @@ private:
   uint8_t rxPin, txPin;
   int8_t resetPin;
   float yawOffset;
-  float yaw;
+  float yaw_rot;  
+  float yaw_geo;
   float x_min, x_max, y_min, y_max;
 
   float lastMagX, lastMagY, lastMagZ;

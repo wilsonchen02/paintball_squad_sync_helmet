@@ -7,7 +7,7 @@ IMU_BNO085::IMU_BNO085(uint8_t rxPin, uint8_t txPin, int8_t resetPin, float yawO
     bno(resetPin),
     rxPin(rxPin), txPin(txPin), resetPin(resetPin),
     yawOffset(yawOffset),
-    yaw(0),
+    yaw_rot(0), yaw_geo(0),
     lastMagX(0), lastMagY(0), lastMagZ(0),
     calibAccel(0), calibGyro(0), calibMag(0) {}
 
@@ -51,8 +51,11 @@ bool IMU_BNO085::read() {
 
   switch (sensorValue.sensorId) {
     case SH2_ROTATION_VECTOR:
+      yaw_rot = convertQuaternionToEuler(&sensorValue.un.rotationVector);
+      break;
+
     case SH2_GEOMAGNETIC_ROTATION_VECTOR:
-      convertQuaternionToEuler(&sensorValue.un.rotationVector);
+      yaw_geo = convertQuaternionToEuler(&sensorValue.un.rotationVector);
       break;
 
     case SH2_MAGNETIC_FIELD_UNCALIBRATED:
@@ -74,15 +77,15 @@ bool IMU_BNO085::read() {
   return true;
 }
 
-void IMU_BNO085::convertQuaternionToEuler(sh2_RotationVectorWAcc_t* q) {
+float IMU_BNO085::convertQuaternionToEuler(sh2_RotationVectorWAcc_t* q) {
   float q_i = q->i;
   float q_j = q->j;
   float q_k = q->k;
   float q_real = q->real;
 
-  float siny_cosp = 2 * (q_real * q_k + q_i * q_j);
-  float cosy_cosp = 1 - 2 * (q_j * q_j + q_k * q_k);
-  yaw = atan2(siny_cosp, cosy_cosp) * RAD_TO_DEG;
+  float siny_cosp = 2.0 * (q_real * q_k + q_i * q_j);
+  float cosy_cosp = 1.0 - 2.0 * (q_j * q_j + q_k * q_k);
+  return atan2(siny_cosp, cosy_cosp) * RAD_TO_DEG; // Return the value
 }
 
 float IMU_BNO085::computeMagHeading(float mx, float my) {
@@ -103,8 +106,10 @@ float IMU_BNO085::getHeading(uint8_t headingMode) {
 
   if (headingMode == SH2_MAGNETIC_FIELD_UNCALIBRATED) {
     headingDeg = computeMagHeading(lastMagX, lastMagY);
-  } else if (headingMode == SH2_ROTATION_VECTOR || headingMode == SH2_GEOMAGNETIC_ROTATION_VECTOR) {
-    headingDeg = yaw;
+  } else if (headingMode == SH2_ROTATION_VECTOR) {
+    headingDeg = yaw_rot;
+  } else if (headingMode == SH2_GEOMAGNETIC_ROTATION_VECTOR) {
+    headingDeg = yaw_geo;
   }
 
   // Apply yaw offset and normalize
@@ -159,22 +164,13 @@ void IMU_BNO085::printCalibrationStatus() {
   Serial.println(F("]"));
 }
 
-void IMU_BNO085::printRawMagnetic() {
-  if (!bno.getSensorEvent(&sensorValue)) return;
-
-  if (sensorValue.sensorId == SH2_MAGNETIC_FIELD_UNCALIBRATED) {
-    float mx = sensorValue.un.magneticField.x;
-    float my = sensorValue.un.magneticField.y;
-    float mz = sensorValue.un.magneticField.z;
-
-    Serial.print(F("Magnetic Field (Uncalibrated) "));
-    Serial.print(F("X: "));
-    Serial.print(mx, 2);
-    Serial.print(F("  Y: "));
-    Serial.print(my, 2);
-    Serial.print(F("  Z: "));
-    Serial.println(mz, 2);
-  }
+void IMU_BNO085::printRawMagnetic() {  
+  Serial.print(F("Mag Field (uncal)   X: "));
+  Serial.print(lastMagX, 2);
+  Serial.print(F("  Y: "));
+  Serial.print(lastMagY, 2);
+  Serial.print(F("  Z: "));
+  Serial.println(lastMagZ, 2);
 }
 
 
