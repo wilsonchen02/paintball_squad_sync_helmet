@@ -33,6 +33,14 @@ uint8_t GuidanceStrip::getState() {
   return state;
 }
 
+uint8_t GuidanceStrip::getGameCode() {
+  return gameCode;
+}
+
+uint8_t GuidanceStrip::getTeamCode() {
+  return teamCode;
+}
+
 void GuidanceStrip::setState(uint8_t newState) {
   state = newState;
   update();

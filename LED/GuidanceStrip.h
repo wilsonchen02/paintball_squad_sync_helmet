@@ -98,6 +98,8 @@ public:
   void showBrightnessPreview();
 
   uint8_t getState();
+  uint8_t getGameCode();
+  uint8_t getTeamCode();
   void setState(uint8_t newState);
   void handlePhysicalInput(uint8_t input);
   void update();
