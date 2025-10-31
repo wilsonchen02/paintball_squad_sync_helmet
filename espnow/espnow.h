@@ -72,6 +72,7 @@ class espnow {
 public:
   espnow(uint8_t channel, uint8_t team_id);
   void espnow_init();
+  void espnow_deinit();
   uint8_t espnow_send_data(message_type data_type, const uint8_t * data, uint8_t payload_len);
 
 private:

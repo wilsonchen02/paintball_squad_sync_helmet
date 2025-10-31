@@ -9,21 +9,32 @@ QueueHandle_t espnow::m_rx_queue = NULL;
 uint8_t espnow::m_last_sender_mac[MAC_ADDR_LENGTH] = {0};
 
 /**
- * @brief Constructor
- * 
- * @param channel Team channel set by button interface
+ * @brief Constructor. Creates queue for received messages.
  */
-espnow::espnow(uint8_t channel, uint8_t team_id) {
-  m_channel = channel;
-  m_team_id = team_id;
+espnow::espnow() {
   m_rx_queue = xQueueCreate(10, sizeof(espnow_rx_packet));
 }
 
 /**
  * @brief ESP-NOW initialization
+ * 
+ * @param channel WiFi channel used for this game
+ * 
+ * @param team_id Team ID used to filter messages in the channel
  */
-void espnow::espnow_init() {
-
+void espnow::espnow_init(uint8_t channel, uint8_t team_id) {
+  // Sets the values of the channel and team_id
+  m_channel = channel;
+  m_team_id = team_id;
+  
+  // Create a task for parsing received packet
+  xTaskCreate(
+    parse_packet_task, 
+    "parse_packet_task", 
+    8192, 
+    NULL, 
+    1, 
+    NULL);
 
   WiFi.mode(WIFI_STA);
 
@@ -41,6 +52,13 @@ void espnow::espnow_init() {
   while (esp_now_add_peer(&m_broadcast_peer) != ESP_OK) {
     vTaskDelay(pdMS_TO_TICKS(100));
   }
+}
+
+/**
+ * @brief Deinitializes the espnow object. Clears the peer address list
+*/
+void espnow::espnow_deinit() {
+  esp_now_deinit();
 }
 
 /**
@@ -71,7 +89,6 @@ uint8_t espnow::espnow_send_data(message_type data_type, const uint8_t * data, u
     return ESPNOW_ERROR;
   }
 }
-
 
 /**
  * @brief Compute checksum

@@ -1,10 +1,11 @@
 #include "espnow.h"
 
 // Channel 0, Team 10
-espnow now(0, 10);
+espnow now;
 
 void setup() {
   // put your setup code here, to run once:
+  now.init(0, 10);
   demo_ms1_setup();
 }
 

@@ -9,20 +9,24 @@ QueueHandle_t espnow::m_rx_queue = NULL;
 uint8_t espnow::m_last_sender_mac[MAC_ADDR_LENGTH] = {0};
 
 /**
- * @brief Constructor
- * 
- * @param channel Team channel set by button interface
+ * @brief Constructor. Creates queue for received messages.
  */
-espnow::espnow(uint8_t channel, uint8_t team_id) {
-  m_channel = channel;
-  m_team_id = team_id;
+espnow::espnow() {
   m_rx_queue = xQueueCreate(10, sizeof(espnow_rx_packet));
 }
 
 /**
  * @brief ESP-NOW initialization
+ * 
+ * @param channel WiFi channel used for this game
+ * 
+ * @param team_id Team ID used to filter messages in the channel
  */
-void espnow::espnow_init() {
+void espnow::espnow_init(uint8_t channel, uint8_t team_id) {
+  // Sets the values of the channel and team_id
+  m_channel = channel;
+  m_team_id = team_id;
+  
   // Create a task for parsing received packet
   xTaskCreate(
     parse_packet_task, 
@@ -51,6 +55,13 @@ void espnow::espnow_init() {
 }
 
 /**
+ * @brief Deinitializes the espnow object. Clears the peer address list
+*/
+void espnow::espnow_deinit() {
+  esp_now_deinit();
+}
+
+/**
  * @brief Broadcast data in team channel
  * 
  * @param data_type Data type
@@ -76,77 +87,6 @@ uint8_t espnow::espnow_send_data(message_type data_type, const uint8_t * data, u
   }
   else {
     return ESPNOW_ERROR;
-  }
-}
-
-/**
- * @brief Task function for parsing packet
- */
-void espnow::parse_packet_task(void* pvParameters) {
-  espnow_rx_packet rx_pkt = {0};
-
-  for (;;) {
-    // block on the queue until a new packet arrives (queue is the synch mechanism)
-    if (xQueueReceive(m_rx_queue, &rx_pkt, portMAX_DELAY) == pdTRUE) {
-      // Verify packet length to avoid potential array index out-of-bounds exception
-      if (rx_pkt.packet_len != PACKET_LENGTH) {
-        continue;
-      }
-
-      // Verify team
-      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != m_team_id) {
-        continue;
-      }
-
-      // Verify header
-      if (rx_pkt.packet[PACKET_HEADER_FIELD_INDEX] != PACKET_HEADER) {
-        continue;
-      }
-
-      // Verify checksum
-      uint8_t checksum_computed = compute_checksum(rx_pkt.packet + PACKET_PREAMBLE_LENGTH, 
-                                                  rx_pkt.packet[PACKET_LENGTH_FIELD_INDEX]);
-      if (rx_pkt.packet[PACKET_CHECKSUM_FIELD_INDEX] != checksum_computed) {
-        continue;
-      }
-
-      // Get data
-      uint8_t payload_len = rx_pkt.packet[PACKET_LENGTH_FIELD_INDEX] - PACKET_DESCRIPTOR_LENGTH;
-      message_type data_type = (message_type)rx_pkt.packet[PACKET_DATATYPE_FIELD_INDEX];
-      uint8_t * data = (uint8_t*)malloc(payload_len);
-      if (data == NULL) {
-        continue;
-      }
-      memcpy(data, rx_pkt.packet + PACKET_PREAMBLE_LENGTH + PACKET_DESCRIPTOR_LENGTH, payload_len);
-
-      switch (data_type) {
-        case message_type::Location:
-          // === For test only ===
-          Serial.begin(115200);
-          locdata loc;
-          memcpy(&loc, (locdata *)data, payload_len);
-          Serial.printf("%.2f %.2f\n", loc.lat, loc.lon);
-          break;
-        case message_type::Engaged:
-          // === For test only ===
-          for (int i = 0; i < payload_len; i++) {
-            Serial.printf("%2X", data[i]);
-          }
-          Serial.println();
-          break;
-        case message_type::SOS:
-          break;
-        case message_type::ClearSOS:
-          break;
-        default:
-          break;
-      }
-      
-      if (data != NULL) {
-        free(data);
-        data = NULL;
-      }
-    }
   }
 }
 
