@@ -47,7 +47,8 @@ IMU_LIS2MDL imu(SDA_PIN_IMU, SCL_PIN_IMU, 0);
 
 GPS gps(RX_PIN_GPS, TX_PIN_GPS, GPSBaud);
 
-
+espnow now(0, 10); //temp
+int m_team_id = 10;
 
 uint8_t mac1[6] = {1, 1, 1, 1, 1, 1};
 
@@ -55,7 +56,7 @@ float heading = -999;
 float latitude = -999;
 float longitude = -999;
 
-
+QueueHandle_t m_rx_queue = espnow::m_rx_queue;
 
 QueueHandle_t xButtonQueue;
 
@@ -96,6 +97,13 @@ void setup() {
   Serial.println("GPS initialized.");
   Serial.println("---------------------");
 
+  //----------- ESPNOW INIT -----------
+  Serial.println("Starting ESPNOW...");
+  now.espnow_init();
+  Serial.println("ESPNOW initialized.");
+  Serial.println("---------------------");
+
+
   //-------------- BUTTON PIN SETUP --------------
   // pinMode(BUTTON_PIN_1, INPUT);
   // pinMode(BUTTON_PIN_2, INPUT);
@@ -110,9 +118,11 @@ void setup() {
 
   //---- TASKS -----
 
-  xTaskCreate(button_poll_task, "ButtonPoll", 4096, NULL, 2, NULL);
-  xTaskCreate(button_handler_task, "ButtonHandler", 4096, NULL, 3, NULL);
-  xTaskCreate(update_location, "UpdateLocation", 8192, NULL, 1, NULL);
+  xTaskCreate(button_poll_task, "button_poll_task", 4096, NULL, 1, NULL);
+  xTaskCreate(button_handler_task, "button_handler_task", 4096, NULL, 5, NULL);
+  xTaskCreate(update_location_task, "update_location_task", 8192, NULL, 3, NULL);
+ xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
+  xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
 
 
 
@@ -214,7 +224,8 @@ void button_handler_task(void *pvParameters) {
   }
 }
 
-void update_location(void *pvParameters) {
+// -------------------- UPDATE LOCATION TASK --------------------
+void update_location_task(void *pvParameters) {
   const TickType_t xPeriod = pdMS_TO_TICKS(100);
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
@@ -225,17 +236,114 @@ void update_location(void *pvParameters) {
     heading = imu.getAverageHeading();
     latitude = gps.getAverageLatitude();
     longitude = gps.getAverageLongitude();
+
+    gs.setLocation(longitude, latitude, heading);
+
+
   }
 }
 
+//---- PARSE PACKET TASK ---------
+void parse_packet_task(void* pvParameters) {
+  espnow_rx_packet rx_pkt = {0};
 
+  for (;;) {
+    // block on the queue until a new packet arrives (queue is the synch mechanism)
+    QueueHandle_t rxq = espnow::get_rx_queue();
+    if (rxq == NULL) {
+      // handle gracefully, e.g. delay and continue
+      vTaskDelay(pdMS_TO_TICKS(100));
+      continue;
+    }
+    if (xQueueReceive(rxq, &rx_pkt, portMAX_DELAY) == pdTRUE) {
+      // Verify packet length to avoid potential array index out-of-bounds exception
+      if (rx_pkt.packet_len != PACKET_LENGTH) {
+        continue;
+      }
 
+      // Verify team
+      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != m_team_id) {
+        continue;
+      }
+
+      // Verify header
+      if (rx_pkt.packet[PACKET_HEADER_FIELD_INDEX] != PACKET_HEADER) {
+        continue;
+      }
+
+      // // Verify checksum
+      // uint8_t checksum_computed = compute_checksum(rx_pkt.packet + PACKET_PREAMBLE_LENGTH, 
+      //                                             rx_pkt.packet[PACKET_LENGTH_FIELD_INDEX]);
+      // if (rx_pkt.packet[PACKET_CHECKSUM_FIELD_INDEX] != checksum_computed) {
+      //   continue;
+      // }
+
+      // Get data
+      uint8_t payload_len = rx_pkt.packet[PACKET_LENGTH_FIELD_INDEX] - PACKET_DESCRIPTOR_LENGTH;
+      message_type data_type = (message_type)rx_pkt.packet[PACKET_DATATYPE_FIELD_INDEX];
+      uint8_t * data = (uint8_t*)malloc(payload_len);
+      if (data == NULL) {
+        continue;
+      }
+      memcpy(data, rx_pkt.packet + PACKET_PREAMBLE_LENGTH + PACKET_DESCRIPTOR_LENGTH, payload_len);
+
+      switch (data_type) {
+        case message_type::Location:
+          locdata loc;
+          memcpy(&loc, (locdata *)data, payload_len);          
+          Serial.println("------------");         
+          char macStr[18]; // 6 bytes * 2 chars + 5 colons + null terminator
+          sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
+                  rx_pkt.sender_mac[0], rx_pkt.sender_mac[1], rx_pkt.sender_mac[2],
+                  rx_pkt.sender_mac[3], rx_pkt.sender_mac[4], rx_pkt.sender_mac[5]);
+          Serial.println(macStr);         
+          Serial.printf("Team: %d\n", rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX]);
+          Serial.printf("%.7f %.7f\n", loc.lat, loc.lon);
+          gs.addMate(mac1, loc.lon, loc.lat);
+          break;
+        case message_type::Engaged:
+          // === For test only ===
+          for (int i = 0; i < payload_len; i++) {
+            Serial.printf("%2X", data[i]);
+          }
+          Serial.println();
+          break;
+        case message_type::SOS:
+          break;
+        case message_type::ClearSOS:
+          break;
+        default:
+          break;
+      }
+      
+      if (data != NULL) {
+        free(data);
+        data = NULL;
+      }
+    }
+  }
+}
+
+// ----------- SEND PACKET TASK ---------------
+void send_packet_task(void *pvParameters) {
+  const TickType_t xPeriod = pdMS_TO_TICKS(500);
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+
+  for(;;) {
+    vTaskDelayUntil(&xLastWakeTime, xPeriod);
+    
+    locdata loc;
+    loc.lat = latitude;
+    loc.lon = longitude;
+    now.espnow_send_data(message_type::Location, (uint8_t *)&loc, sizeof(loc));
+  }
+}
 
 
 void loop() {
 
 
-  gs.setLocation(longitude, latitude, heading);
   
   // Serial.println(longitude);
   // Serial.println(latitude);
