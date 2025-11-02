@@ -27,15 +27,6 @@ void espnow::espnow_init(uint8_t channel, uint8_t team_id) {
   m_channel = channel;
   m_team_id = team_id;
   
-  // Create a task for parsing received packet
-  xTaskCreate(
-    parse_packet_task, 
-    "parse_packet_task", 
-    8192, 
-    NULL, 
-    1, 
-    NULL);
-
   WiFi.mode(WIFI_STA);
 
   // ESP-NOW initialization and register callback function

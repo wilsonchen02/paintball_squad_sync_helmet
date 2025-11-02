@@ -70,10 +70,12 @@ struct espnow_rx_packet {
 
 class espnow {
 public:
-  espnow(uint8_t channel, uint8_t team_id);
-  void espnow_init();
+  espnow();
+  void espnow_init(uint8_t channel, uint8_t team_id);
   void espnow_deinit();
   uint8_t espnow_send_data(message_type data_type, const uint8_t * data, uint8_t payload_len);
+  static QueueHandle_t m_rx_queue;
+  static QueueHandle_t get_rx_queue() { return m_rx_queue; }
 
 private:
   uint8_t m_channel;
@@ -81,7 +83,6 @@ private:
   // Static
   static uint8_t m_team_id;
   static esp_now_peer_info_t m_broadcast_peer;
-  static QueueHandle_t m_rx_queue;
   static uint8_t m_last_sender_mac[MAC_ADDR_LENGTH]; //Store mac address of sender
 
   static void parse_packet_task(void* pvParameters);

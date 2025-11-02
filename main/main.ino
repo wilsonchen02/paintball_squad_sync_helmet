@@ -47,7 +47,7 @@ IMU_LIS2MDL imu(SDA_PIN_IMU, SCL_PIN_IMU, 0);
 
 GPS gps(RX_PIN_GPS, TX_PIN_GPS, GPSBaud);
 
-espnow now(0, 10); //temp
+espnow now;
 int m_team_id = 10;
 
 uint8_t mac1[6] = {1, 1, 1, 1, 1, 1};
@@ -98,7 +98,7 @@ void setup() {
 
   //----------- ESPNOW INIT -----------
   Serial.println("Starting ESPNOW...");
-  now.espnow_init();
+  now.espnow_init(0, 10);
   Serial.println("ESPNOW initialized.");
   Serial.println("---------------------");
 
@@ -187,6 +187,13 @@ void button_handler_task(void *pvParameters) {
         case 1:
           Serial.println("Button 1 pressed!");
           gs.handlePhysicalInput(2);
+          if(gs.getState() == STATE_GUIDANCE) {
+            locdata loc;
+            loc.lat = 777;
+            loc.lon = 777;
+
+            now.espnow_send_data(message_type::Engaged, (uint8_t *)&loc, sizeof(loc));
+          }
           break;
         case 2:
           Serial.println("Button 2 pressed!");
@@ -283,26 +290,23 @@ void parse_packet_task(void* pvParameters) {
       }
       memcpy(data, rx_pkt.packet + PACKET_PREAMBLE_LENGTH + PACKET_DESCRIPTOR_LENGTH, payload_len);
 
+      locdata loc;
+      memcpy(&loc, (locdata *)data, payload_len);          
+      Serial.println("------------");         
+      char macStr[18]; // 6 bytes * 2 chars + 5 colons + null terminator
+      sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
+              rx_pkt.sender_mac[0], rx_pkt.sender_mac[1], rx_pkt.sender_mac[2],
+              rx_pkt.sender_mac[3], rx_pkt.sender_mac[4], rx_pkt.sender_mac[5]);
+      Serial.println(macStr);         
+      Serial.printf("Team: %d\n", rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX]);
+      Serial.printf("%.7f %.7f\n", loc.lat, loc.lon);
+
       switch (data_type) {
         case message_type::Location:
-          locdata loc;
-          memcpy(&loc, (locdata *)data, payload_len);          
-          Serial.println("------------");         
-          char macStr[18]; // 6 bytes * 2 chars + 5 colons + null terminator
-          sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X",
-                  rx_pkt.sender_mac[0], rx_pkt.sender_mac[1], rx_pkt.sender_mac[2],
-                  rx_pkt.sender_mac[3], rx_pkt.sender_mac[4], rx_pkt.sender_mac[5]);
-          Serial.println(macStr);         
-          Serial.printf("Team: %d\n", rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX]);
-          Serial.printf("%.7f %.7f\n", loc.lat, loc.lon);
-          gs.addMate(mac1, loc.lon, loc.lat);
+          gs.addMate(rx_pkt.sender_mac, loc.lon, loc.lat);
           break;
         case message_type::Engaged:
-          // === For test only ===
-          for (int i = 0; i < payload_len; i++) {
-            Serial.printf("%2X", data[i]);
-          }
-          Serial.println();
+          gs.mateEngaged(rx_pkt.sender_mac);
           break;
         case message_type::SOS:
           break;
@@ -332,6 +336,7 @@ void send_packet_task(void *pvParameters) {
     locdata loc;
     loc.lat = latitude;
     loc.lon = longitude;
+    if(gs.getState() == STATE_GUIDANCE) //TEMP
     now.espnow_send_data(message_type::Location, (uint8_t *)&loc, sizeof(loc));
   }
 }
