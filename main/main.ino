@@ -9,7 +9,7 @@
 //--- Pins ---
 #define LED_PIN   6
 #define MAX_LED_COUNT   75
-#define LED_COUNT   45
+#define LED_COUNT   49
 #define DEFAULT_BRIGHTNESS   5
 
 #define RX_PIN_GPS 44
@@ -19,10 +19,10 @@ const uint32_t GPSBaud = 57600;
 #define SDA_PIN_IMU 8
 #define SCL_PIN_IMU 9  
 
-#define BUTTON_PIN_1 35
-#define BUTTON_PIN_2 36
-#define BUTTON_PIN_3 37
-#define BUTTON_PIN_4 38
+#define BUTTON_PIN_1 36
+#define BUTTON_PIN_2 35
+#define BUTTON_PIN_3 39
+#define BUTTON_PIN_4 37
 
 
 
@@ -87,7 +87,6 @@ void setup() {
   //----------- GUIDANCE STRIP SETUP -----------
   Serial.println("Starting Guidance Strip...");
   gs.setLocation(0, 0, 0); //looking straight ahead from 0,0
-  gs.setState(STATE_TEAM_SELECT);
   Serial.println("Guidance Strip initialized.");
   Serial.println("---------------------");
   
@@ -105,10 +104,10 @@ void setup() {
 
 
   //-------------- BUTTON PIN SETUP --------------
-  // pinMode(BUTTON_PIN_1, INPUT);
-  // pinMode(BUTTON_PIN_2, INPUT);
-  // pinMode(BUTTON_PIN_3, INPUT);
-  // pinMode(BUTTON_PIN_4, INPUT);
+  pinMode(BUTTON_PIN_1, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_2, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_3, INPUT_PULLUP);
+  pinMode(BUTTON_PIN_4, INPUT_PULLUP);
 
 
 
@@ -187,7 +186,7 @@ void button_handler_task(void *pvParameters) {
       switch (buttonID) {
         case 1:
           Serial.println("Button 1 pressed!");
-          gs.handlePhysicalInput(0);
+          gs.handlePhysicalInput(2);
           break;
         case 2:
           Serial.println("Button 2 pressed!");
@@ -195,29 +194,26 @@ void button_handler_task(void *pvParameters) {
           break;
         case 3:
           Serial.println("Button 3 pressed!");
-          gs.handlePhysicalInput(2);
+          gs.handlePhysicalInput(3);
           break;
         case 4:
           Serial.println("Button 4 pressed!");
-          gs.handlePhysicalInput(3);
+          gs.handlePhysicalInput(0);
           break;
 
 
         case 101:
           Serial.println("Button 1 long press");
-          gs.handlePhysicalInput(4);
           break;
         case 102:
           Serial.println("Button 2 long press");
-          gs.handlePhysicalInput(5);
+          gs.handlePhysicalInput(4);
           break;
         case 103:
           Serial.println("Button 3 long press");
-          gs.handlePhysicalInput(6);
           break;
         case 104:
           Serial.println("Button 4 long press");
-          gs.handlePhysicalInput(7);
           break;
       }
     }
@@ -340,11 +336,13 @@ void send_packet_task(void *pvParameters) {
   }
 }
 
-
+int lastGameCode = 0;
+int lastTeamCode = 0;
 void loop() {
 
+   if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
+   if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
 
-  
   // Serial.println(longitude);
   // Serial.println(latitude);
   // Serial.println(heading);

@@ -56,6 +56,7 @@ void GuidanceStrip::setState(uint8_t newState) {
 // -------------------------------------------
 void GuidanceStrip::showSelector(uint8_t numColors, uint8_t colors[4], int8_t currentPlace) {
   uint16_t sectionSize = numPixels / 4;
+
   static bool blinkState = false;
   static unsigned long lastBlinkTime = 0;
   unsigned long now = millis();
@@ -82,12 +83,14 @@ void GuidanceStrip::showSelector(uint8_t numColors, uint8_t colors[4], int8_t cu
   }
 
   // Draw each of the 4 sections
+  uint16_t remainder = numPixels % 4;
+  int start = 0;
   for (uint8_t section = 0; section < 4; section++) {
     uint8_t colorIndex = colors[section] % numColors;
     uint32_t color = palette[colorIndex];
 
-    uint16_t start = section * sectionSize;
-    uint16_t end = (section == 3) ? numPixels : start + sectionSize;
+    uint16_t extra = (section < remainder) ? 1 : 0;
+    uint16_t end = start + sectionSize + extra;
 
     for (uint16_t i = start; i < end; i++) {
       if (section == currentPlace && blinkState) {
@@ -96,9 +99,10 @@ void GuidanceStrip::showSelector(uint8_t numColors, uint8_t colors[4], int8_t cu
         strip.setPixelColor(i, color);
       }
     }
+    start = end; // next section starts where this one ended
   }
 
-  strip.show();
+  show();
 }
 
 
@@ -289,12 +293,12 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
     case 1: // Button 1 
       switch (state) {
         case STATE_GAME_SELECT: {
-          if(gameSelectorPos++ > 3) gameSelectorPos = 0;
+          if(++gameSelectorPos > 3) gameSelectorPos = 0;
           update();
           break;
         }
         case STATE_TEAM_SELECT: {
-          if(teamSelectorPos++ > 3) teamSelectorPos = 0;
+          if(++teamSelectorPos > 3) teamSelectorPos = 0;
           update();
           break;
         }
@@ -317,11 +321,21 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
       switch (state) {
         case STATE_GAME_SELECT: {
           gameSelectorColors[gameSelectorPos] = (gameSelectorColors[gameSelectorPos] + 1) % 2;
+          gameCode =
+            gameSelectorColors[3] * pow(2, 3) +
+            gameSelectorColors[2] * pow(2, 2) +
+            gameSelectorColors[1] *     2     +
+            gameSelectorColors[0];
           update();
           break;
         }
         case STATE_TEAM_SELECT: {
           teamSelectorColors[teamSelectorPos] = (teamSelectorColors[teamSelectorPos] + 1) % 4;
+          teamCode =
+            teamSelectorColors[3] * pow(4, 3) +
+            teamSelectorColors[2] * pow(4, 2) +
+            teamSelectorColors[1] *     4     +
+            teamSelectorColors[0];
           update();
           break;
         }
