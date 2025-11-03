@@ -113,7 +113,7 @@ void setup() {
 
   //----------- ESPNOW INIT -----------
   Serial.println("Starting ESPNOW...");
-  now.espnow_init(0, 0);
+  now.espnow_init(1, 0);
   Serial.println("ESPNOW initialized.");
   Serial.println("---------------------");
 

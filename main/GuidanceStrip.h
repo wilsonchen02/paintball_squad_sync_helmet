@@ -142,7 +142,7 @@ private:
   Adafruit_NeoPixel strip;
   uint16_t numPixels;
   uint8_t state = 0;
-  uint8_t gameCode;
+  uint8_t gameCode = 1;
   uint8_t gameSelectorPos;
   uint8_t gameSelectorColors[4] = {0, 0, 0, 0};
   uint8_t teamCode;
