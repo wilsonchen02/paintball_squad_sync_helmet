@@ -1,5 +1,6 @@
 #include "GuidanceStrip.h"
-#include "IMU_LIS2MDL.h"
+//#include "IMU_LIS2MDL.h"
+#include "IMU_BNO085.h"
 #include "GPS.h"
 #include "espnow.h"
 
@@ -16,8 +17,13 @@
 #define TX_PIN_GPS 43
 const uint32_t GPSBaud = 57600;
 
-#define SDA_PIN_IMU 8
-#define SCL_PIN_IMU 9  
+// #define SDA_PIN_IMU 8 //LIS2MDL
+// #define SCL_PIN_IMU 9  
+
+#define RX_PIN_IMU 17 //BNO085
+#define TX_PIN_IMU 18
+#define RESET_PIN_IMU 5
+
 
 #define BUTTON_PIN_1 36
 #define BUTTON_PIN_2 35
@@ -43,7 +49,9 @@ const uint32_t GPSBaud = 57600;
 
 GuidanceStrip gs(LED_COUNT, LED_PIN, DEFAULT_BRIGHTNESS);
 
-IMU_LIS2MDL imu(SDA_PIN_IMU, SCL_PIN_IMU, 0);
+//IMU_LIS2MDL imu(SDA_PIN_IMU, SCL_PIN_IMU, 0);
+
+IMU_BNO085 imu(RX_PIN_IMU, TX_PIN_IMU, RESET_PIN_IMU, 0);
 
 GPS gps(RX_PIN_GPS, TX_PIN_GPS, GPSBaud);
 
@@ -89,12 +97,12 @@ void setup() {
   // );
 
 //white cord
-    imu.setCalibration(
-    -18, 42,    // x min/max
-    -9, 67,     // y min/max
-    -65, 56,    // z min/max
-    0, 0       // roll & pitch biases
-  );
+  //   imu.setCalibration(
+  //   -18, 42,    // x min/max
+  //   -9, 67,     // y min/max
+  //   -65, 56,    // z min/max
+  //   0, 0       // roll & pitch biases
+  // );
 
   Serial.println("IMU initialized.");
   Serial.println("---------------------");
@@ -254,13 +262,17 @@ void update_location_task(void *pvParameters) {
 
   for(;;) {
     vTaskDelayUntil(&xLastWakeTime, xPeriod);
-
-    heading = imu.getAverageHeading();
+    // if(imu.read())
+    //   heading = imu.getHeading(SH2_GEOMAGNETIC_ROTATION_VECTOR); //for the BNO085
+    
+    //heading = imu.getAverageHeading(); //for the LIS2MDL
     latitude = gps.getAverageLatitude();
     longitude = gps.getAverageLongitude();
 
     gs.setLocation(longitude, latitude, heading);
-    //Serial.println(longitude, 6);    Serial.println(latitude, 6); Serial.println(heading, 6);
+    //Serial.println(longitude, 6);    Serial.println(latitude, 6); 
+    //Serial.println(heading, 6);
+    Serial.println(heading, 1);
 
 
 
@@ -368,7 +380,9 @@ void loop() {
 
    if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
    if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
-    
+   
+    if(imu.read())
+     heading = imu.getHeading(SH2_ROTATION_VECTOR); //for the BNO085
     
     gps.update();
 
