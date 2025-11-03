@@ -48,7 +48,7 @@ IMU_LIS2MDL imu(SDA_PIN_IMU, SCL_PIN_IMU, 0);
 GPS gps(RX_PIN_GPS, TX_PIN_GPS, GPSBaud);
 
 espnow now;
-int m_team_id = 10;
+
 
 uint8_t mac1[6] = {1, 1, 1, 1, 1, 1};
 
@@ -113,7 +113,7 @@ void setup() {
 
   //----------- ESPNOW INIT -----------
   Serial.println("Starting ESPNOW...");
-  now.espnow_init(0, 10);
+  now.espnow_init(0, 0);
   Serial.println("ESPNOW initialized.");
   Serial.println("---------------------");
 
@@ -132,15 +132,15 @@ void setup() {
 
   //---- TASKS -----
 
-  //xTaskCreate(button_poll_task, "button_poll_task", 4096, NULL, 1, NULL);
-  //xTaskCreate(button_handler_task, "button_handler_task", 4096, NULL, 5, NULL);
+  xTaskCreate(button_poll_task, "button_poll_task", 4096, NULL, 1, NULL);
+  xTaskCreate(button_handler_task, "button_handler_task", 4096, NULL, 5, NULL);
   xTaskCreate(update_location_task, "update_location_task", 8192, NULL, 3, NULL);
- //xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
-  //xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
+  xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
+  xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
 
    gs.addObjective(-83.7154600000,42.2925150000);
 
-   gs.setState(STATE_GUIDANCE);
+   //gs.setState(STATE_GUIDANCE);
 
 }
 
@@ -221,6 +221,10 @@ void button_handler_task(void *pvParameters) {
         case 4:
           Serial.println("Button 4 pressed!");
           gs.handlePhysicalInput(0);
+          if(gs.getState() == STATE_GUIDANCE) {
+            now.espnow_deinit();
+            now.espnow_init(gs.getGameCode(), gs.getTeamCode());
+          }
           break;
 
 
@@ -282,7 +286,7 @@ void parse_packet_task(void* pvParameters) {
       }
 
       // Verify team
-      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != m_team_id) {
+      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != gs.getTeamCode()) {
         continue;
       }
 
