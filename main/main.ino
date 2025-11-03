@@ -81,20 +81,20 @@ void setup() {
   //   ROLL_BIAS, PITCH_BIAS       // roll & pitch biases
   // );
 //black cord
-  imu.setCalibration(
-    17, 76,    // x min/max
-    -318, -265,     // y min/max
-    136, 251,    // z min/max
-    0, 0       // roll & pitch biases
-  );
-
-  // //white cord
-  //   imu.setCalibration(
-  //   -18, 42,    // x min/max
-  //   -9, 67,     // y min/max
-  //   -65, 56,    // z min/max
+  // imu.setCalibration(
+  //   17, 76,    // x min/max
+  //   -318, -265,     // y min/max
+  //   136, 251,    // z min/max
   //   0, 0       // roll & pitch biases
   // );
+
+//white cord
+    imu.setCalibration(
+    -18, 42,    // x min/max
+    -9, 67,     // y min/max
+    -65, 56,    // z min/max
+    0, 0       // roll & pitch biases
+  );
 
   Serial.println("IMU initialized.");
   Serial.println("---------------------");
@@ -260,7 +260,7 @@ void update_location_task(void *pvParameters) {
     longitude = gps.getAverageLongitude();
 
     gs.setLocation(longitude, latitude, heading);
-    Serial.println(longitude, 6);    Serial.println(latitude, 6); Serial.println(heading, 6);
+    //Serial.println(longitude, 6);    Serial.println(latitude, 6); Serial.println(heading, 6);
 
 
 

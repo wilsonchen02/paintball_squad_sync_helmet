@@ -28,7 +28,13 @@ void espnow::espnow_init(uint8_t channel, uint8_t team_id) {
   m_team_id = team_id;
   
   WiFi.mode(WIFI_STA);
-
+  
+  if (esp_wifi_set_channel(m_channel, WIFI_SECOND_CHAN_NONE) != ESP_OK) {
+    Serial.printf("Error setting Wi-Fi channel to %d\n", m_channel);        //channel range: 1-14 
+    return; // Or handle error
+  }
+  Serial.printf("Wi-Fi channel set to %d\n", m_channel);
+  
   // ESP-NOW initialization and register callback function
   while (esp_now_init() != ESP_OK) {
     vTaskDelay(pdMS_TO_TICKS(100));

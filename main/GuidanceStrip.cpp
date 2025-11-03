@@ -326,7 +326,8 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
             gameSelectorColors[3] * pow(2, 3) +
             gameSelectorColors[2] * pow(2, 2) +
             gameSelectorColors[1] *     2     +
-            gameSelectorColors[0];
+            gameSelectorColors[0]
+            + 1;
           update();
           break;
         }
