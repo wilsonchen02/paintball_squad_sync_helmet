@@ -74,12 +74,27 @@ void setup() {
     while (1) delay(10);
   }
   
+  // imu.setCalibration(
+  //   X_MIN, X_MAX,               // x min/max
+  //   Y_MIN, Y_MAX,               // y min/max
+  //   Z_MIN, Z_MAX,               // z min/max
+  //   ROLL_BIAS, PITCH_BIAS       // roll & pitch biases
+  // );
+//black cord
   imu.setCalibration(
-    X_MIN, X_MAX,               // x min/max
-    Y_MIN, Y_MAX,               // y min/max
-    Z_MIN, Z_MAX,               // z min/max
-    ROLL_BIAS, PITCH_BIAS       // roll & pitch biases
+    17, 76,    // x min/max
+    -318, -265,     // y min/max
+    136, 251,    // z min/max
+    0, 0       // roll & pitch biases
   );
+
+  // //white cord
+  //   imu.setCalibration(
+  //   -18, 42,    // x min/max
+  //   -9, 67,     // y min/max
+  //   -65, 56,    // z min/max
+  //   0, 0       // roll & pitch biases
+  // );
 
   Serial.println("IMU initialized.");
   Serial.println("---------------------");
@@ -117,15 +132,15 @@ void setup() {
 
   //---- TASKS -----
 
-  xTaskCreate(button_poll_task, "button_poll_task", 4096, NULL, 1, NULL);
-  xTaskCreate(button_handler_task, "button_handler_task", 4096, NULL, 5, NULL);
+  //xTaskCreate(button_poll_task, "button_poll_task", 4096, NULL, 1, NULL);
+  //xTaskCreate(button_handler_task, "button_handler_task", 4096, NULL, 5, NULL);
   xTaskCreate(update_location_task, "update_location_task", 8192, NULL, 3, NULL);
- xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
-  xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
+ //xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
+  //xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
 
+   gs.addObjective(-83.7154600000,42.2925150000);
 
-
-  gs.addObjective(10,10);
+   gs.setState(STATE_GUIDANCE);
 
 }
 
@@ -241,6 +256,8 @@ void update_location_task(void *pvParameters) {
     longitude = gps.getAverageLongitude();
 
     gs.setLocation(longitude, latitude, heading);
+    Serial.println(longitude, 6);    Serial.println(latitude, 6); Serial.println(heading, 6);
+
 
 
   }
@@ -347,6 +364,9 @@ void loop() {
 
    if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
    if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
+    
+    
+    gps.update();
 
   // Serial.println(longitude);
   // Serial.println(latitude);

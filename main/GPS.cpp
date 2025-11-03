@@ -81,19 +81,19 @@ void GPS::update() {
                 addReading(gps.location.lat(), gps.location.lng());
             }
 
-            // Print info every 200 ms as before
-            if (millis() - lastPrint > 200) {
-                Serial.println("---------------");
+            // // Print info every 200 ms as before
+            // if (millis() - lastPrint > 200) {
+            //     Serial.println("---------------");
 
-                printInfo();
+            //     printInfo();
 
-                Serial.print("Average Location: ");
-                Serial.print(getAverageLatitude(), 10);
-                Serial.print(", ");
-                Serial.println(getAverageLongitude(), 10);
+            //     Serial.print("Average Location: ");
+            //     Serial.print(getAverageLatitude(), 10);
+            //     Serial.print(", ");
+            //     Serial.println(getAverageLongitude(), 10);
 
-                lastPrint = millis();
-            }
+            //     lastPrint = millis();
+            // }
         }
     }
 

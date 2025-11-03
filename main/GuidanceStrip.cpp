@@ -130,6 +130,7 @@ void GuidanceStrip::addMate(uint8_t mac[6], float x, float y) {
       elem.x = x;
       elem.y = y;
       elem.ttl = MATE_TTL;
+      elem.lastUpdate = millis();
       return;      
     }
   }
