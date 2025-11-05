@@ -23,7 +23,7 @@ const uint32_t GPSBaud = 57600;
 #define RX_PIN_IMU 17 //BNO085
 #define TX_PIN_IMU 18
 #define RESET_PIN_IMU 5
-
+#define HEADING_MODE SH2_GAME_ROTATION_VECTOR
 
 #define BUTTON_PIN_1 36
 #define BUTTON_PIN_2 35
@@ -51,7 +51,7 @@ GuidanceStrip gs(LED_COUNT, LED_PIN, DEFAULT_BRIGHTNESS);
 
 //IMU_LIS2MDL imu(SDA_PIN_IMU, SCL_PIN_IMU, 0);
 
-IMU_BNO085 imu(RX_PIN_IMU, TX_PIN_IMU, RESET_PIN_IMU, 0);
+IMU_BNO085 imu(RX_PIN_IMU, TX_PIN_IMU, RESET_PIN_IMU, 180);
 
 GPS gps(RX_PIN_GPS, TX_PIN_GPS, GPSBaud);
 
@@ -245,6 +245,7 @@ void button_handler_task(void *pvParameters) {
           break;
         case 103:
           Serial.println("Button 3 long press");
+          imu.setCurrentHeadingToZero(HEADING_MODE);
           break;
         case 104:
           Serial.println("Button 4 long press");
@@ -269,7 +270,7 @@ void update_location_task(void *pvParameters) {
     latitude = gps.getAverageLatitude();
     longitude = gps.getAverageLongitude();
 
-    gs.setLocation(longitude, latitude, heading);
+    gs.setLocation(longitude, latitude, 0);
     //Serial.println(longitude, 6);    Serial.println(latitude, 6); 
     //Serial.println(heading, 6);
     Serial.println(heading, 1);
@@ -381,8 +382,8 @@ void loop() {
    if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
    if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
    
-    if(imu.read())
-     heading = imu.getHeading(SH2_ROTATION_VECTOR); //for the BNO085
+     if(imu.read())
+       heading = imu.getHeading(HEADING_MODE); //for the BNO085
     
     gps.update();
 

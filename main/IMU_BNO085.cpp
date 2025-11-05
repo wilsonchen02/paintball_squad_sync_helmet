@@ -7,7 +7,7 @@ IMU_BNO085::IMU_BNO085(uint8_t rxPin, uint8_t txPin, int8_t resetPin, float yawO
     bno(resetPin),
     rxPin(rxPin), txPin(txPin), resetPin(resetPin),
     yawOffset(yawOffset),
-    yaw_rot(0), yaw_geo(0),
+    yaw_rot(0), yaw_geo(0), yaw_game(0),
     lastMagX(0), lastMagY(0), lastMagZ(0),
     calibAccel(0), calibGyro(0), calibMag(0) {}
 
@@ -37,6 +37,7 @@ bool IMU_BNO085::begin() {
   bno.enableReport(SH2_ROTATION_VECTOR);
   bno.enableReport(SH2_GEOMAGNETIC_ROTATION_VECTOR);
   bno.enableReport(SH2_MAGNETIC_FIELD_UNCALIBRATED);
+  bno.enableReport(SH2_GAME_ROTATION_VECTOR);
   bno.enableReport(SH2_ACCELEROMETER);
   bno.enableReport(SH2_GYROSCOPE_CALIBRATED);
   bno.enableReport(SH2_MAGNETIC_FIELD_CALIBRATED);
@@ -64,6 +65,10 @@ bool IMU_BNO085::read() {
       lastMagZ = sensorValue.un.magneticField.z;
       break;
 
+    case SH2_GAME_ROTATION_VECTOR:            
+      yaw_game = convertQuaternionToEuler(&sensorValue.un.rotationVector);
+      break;
+    
     case SH2_ACCELEROMETER:
       calibAccel = sensorValue.status;
       break;
@@ -111,6 +116,9 @@ float IMU_BNO085::getHeading(uint8_t headingMode) {
   } else if (headingMode == SH2_GEOMAGNETIC_ROTATION_VECTOR) {
     headingDeg = yaw_geo;
   }
+   else if (headingMode == SH2_GAME_ROTATION_VECTOR) {
+    headingDeg = yaw_game;
+  }
 
   // Apply yaw offset and normalize
   headingDeg -= yawOffset;
@@ -138,6 +146,12 @@ float IMU_BNO085::getAverageHeading(uint8_t headingMode) {
 void IMU_BNO085::setOffset(float offsetDegrees) { 
   yawOffset = offsetDegrees; 
 }
+
+void IMU_BNO085::setCurrentHeadingToZero(uint8_t headingMode) { 
+  yawOffset += getHeading(headingMode); 
+}
+
+
 
 void IMU_BNO085::setCalibration(float xMin, float xMax, float yMin, float yMax) {
   x_min = xMin;

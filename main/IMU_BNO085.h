@@ -12,6 +12,9 @@ public:
   float getAverageHeading(uint8_t headingMode = SH2_ROTATION_VECTOR);
 
   void setOffset(float offsetDegrees);
+  void setCurrentHeadingToZero(uint8_t headingMode);
+
+
   void setCalibration(float xMin = 0, float xMax = 0,
                       float yMin = 0, float yMax = 0);
   void printCalibrationStatus();
@@ -34,6 +37,8 @@ private:
   float yawOffset;
   float yaw_rot;  
   float yaw_geo;
+  float yaw_game;
+  
   float x_min, x_max, y_min, y_max;
 
   float lastMagX, lastMagY, lastMagZ;
