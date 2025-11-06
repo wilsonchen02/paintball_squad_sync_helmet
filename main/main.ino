@@ -146,7 +146,8 @@ void setup() {
   xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
   xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
 
-   gs.addObjective(-83.7154600000,42.2925150000);
+   //gs.addObjective(-83.7154600000,42.2925150000);
+   gs.addObjective(-83.71535421756761,42.292475859161556);
 
    //gs.setState(STATE_GUIDANCE);
 
@@ -220,6 +221,13 @@ void button_handler_task(void *pvParameters) {
           break;
         case 2:
           Serial.println("Button 2 pressed!");
+          if(gs.getState() == STATE_GUIDANCE) {
+            locdata loc;
+            loc.lat = 777;
+            loc.lon = 777;
+
+            now.espnow_send_data(message_type::Eliminated, (uint8_t *)&loc, sizeof(loc));
+          }
           gs.handlePhysicalInput(1);
           break;
         case 3:
@@ -241,7 +249,20 @@ void button_handler_task(void *pvParameters) {
           break;
         case 102:
           Serial.println("Button 2 long press");
-          gs.handlePhysicalInput(4);
+          gs.handlePhysicalInput(4); //does nothing
+          if(gs.getState() == STATE_GUIDANCE) {
+            locdata loc;
+            loc.lat = latitude;
+            loc.lon = longitude;
+            if(gs.isInSOS()) {
+              now.espnow_send_data(message_type::ClearSOS, (uint8_t *)&loc, sizeof(loc));
+              gs.clearSOS();
+            }
+            else {
+              now.espnow_send_data(message_type::SOS, (uint8_t *)&loc, sizeof(loc));
+              gs.mateSOS();
+            }
+          }
           break;
         case 103:
           Serial.println("Button 3 long press");
@@ -270,10 +291,10 @@ void update_location_task(void *pvParameters) {
     latitude = gps.getAverageLatitude();
     longitude = gps.getAverageLongitude();
 
-    gs.setLocation(longitude, latitude, 0);
+    gs.setLocation(longitude, latitude, heading);
     //Serial.println(longitude, 6);    Serial.println(latitude, 6); 
     //Serial.println(heading, 6);
-    Serial.println(heading, 1);
+    //Serial.println(heading, 1);
 
 
 
@@ -295,11 +316,6 @@ void parse_packet_task(void* pvParameters) {
     if (xQueueReceive(rxq, &rx_pkt, portMAX_DELAY) == pdTRUE) {
       // Verify packet length to avoid potential array index out-of-bounds exception
       if (rx_pkt.packet_len != PACKET_LENGTH) {
-        continue;
-      }
-
-      // Verify team
-      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != gs.getTeamCode()) {
         continue;
       }
 
@@ -333,8 +349,26 @@ void parse_packet_task(void* pvParameters) {
               rx_pkt.sender_mac[3], rx_pkt.sender_mac[4], rx_pkt.sender_mac[5]);
       Serial.println(macStr);         
       Serial.printf("Team: %d\n", rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX]);
+      Serial.printf("Type: %d\n", data_type);
       Serial.printf("%.7f %.7f\n", loc.lat, loc.lon);
 
+      //Game-wide messages
+      switch (data_type) {
+        case message_type::SOS:
+          gs.addMate(rx_pkt.sender_mac, loc.lon, loc.lat);
+          gs.mateSOS(rx_pkt.sender_mac);
+          break;
+        case message_type::ClearSOS:
+          gs.clearSOS();
+          break;
+      }
+      
+      // Verify team
+      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != gs.getTeamCode()) {
+        continue;
+      }
+
+      //Team-specific messages
       switch (data_type) {
         case message_type::Location:
           gs.addMate(rx_pkt.sender_mac, loc.lon, loc.lat);
@@ -342,13 +376,13 @@ void parse_packet_task(void* pvParameters) {
         case message_type::Engaged:
           gs.mateEngaged(rx_pkt.sender_mac);
           break;
-        case message_type::SOS:
-          break;
-        case message_type::ClearSOS:
+        case message_type::Eliminated:
+          gs.mateEliminated(rx_pkt.sender_mac);
           break;
         default:
           break;
       }
+      
       
       if (data != NULL) {
         free(data);

@@ -54,7 +54,8 @@ enum class message_type : uint8_t {
   Location = 0,
   Engaged = 1,
   SOS = 2,
-  ClearSOS = 3
+  ClearSOS = 3,
+  Eliminated = 4
 };
 
 // Struct for location data

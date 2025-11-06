@@ -124,6 +124,9 @@ float IMU_BNO085::getHeading(uint8_t headingMode) {
   headingDeg -= yawOffset;
   if (headingDeg > 180) headingDeg -= 360;
   if (headingDeg < -180) headingDeg += 360;
+  
+  if(headingMode == SH2_GAME_ROTATION_VECTOR)
+    return -headingDeg;
   return headingDeg;
 }
 
@@ -148,7 +151,10 @@ void IMU_BNO085::setOffset(float offsetDegrees) {
 }
 
 void IMU_BNO085::setCurrentHeadingToZero(uint8_t headingMode) { 
-  yawOffset += getHeading(headingMode); 
+    if(headingMode == SH2_GAME_ROTATION_VECTOR)
+      yawOffset -= getHeading(headingMode); 
+    else
+      yawOffset += getHeading(headingMode); 
 }
 
 

@@ -111,7 +111,10 @@ public:
   void mateEngaged(uint8_t mac[6]);
   void mateEliminated(uint8_t mac[6]);
   void mateSOS(uint8_t mac[6]);
+  void mateSOS();
   void clearSOS();
+  bool isInSOS();
+
   void showMap();
 
 //        +Y (dy > 0)

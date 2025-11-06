@@ -192,11 +192,18 @@ void GuidanceStrip::mateSOS(uint8_t mac[6]) {
   }
 }
 
+void GuidanceStrip::mateSOS() {
+  inSOS = true;
+}
+
+
 void GuidanceStrip::clearSOS() {
   inSOS = false;
+        Serial.println("1231234");
   for (auto &elem : mapElems) {
     if (elem.type == MATE_ELEM) {
       // update color
+      Serial.println("HEYyYYYYYYYY");
       Color c = COLOR_MATE;
       elem.r = c.r;
       elem.g = c.g;
@@ -217,6 +224,10 @@ void GuidanceStrip::clearSOS() {
       elem.b = c.b;
     }
   }
+}
+
+bool GuidanceStrip::isInSOS() {
+  return inSOS;
 }
 
 void GuidanceStrip::showMap() {
@@ -241,6 +252,26 @@ void GuidanceStrip::showMap() {
     while (relativeAngle > 180.0f) relativeAngle -= 360.0f;
     while (relativeAngle < -180.0f) relativeAngle += 360.0f;
     
+    //Light border if behind in SOS
+    if(inSOS && std::abs(relativeAngle) > 90) {
+      Color c = COLOR_SOS;
+      if(elem.r != c.r || elem.g != c.g || elem.b != c.b)
+        continue;
+      if(relativeAngle > -90) {
+        setLED(numPixels-1, c.r, c.g, c.b);
+        setLED(numPixels-2, c.r, c.g, c.b);
+        setLED(numPixels-3, c.r, c.g, c.b);
+        setLED(numPixels-4, c.r, c.g, c.b);
+      }
+      if(relativeAngle < 90) {
+        setLED(0, c.r, c.g, c.b);
+        setLED(1, c.r, c.g, c.b);
+        setLED(2, c.r, c.g, c.b);
+        setLED(3, c.r, c.g, c.b);
+      }
+      continue;
+    }
+
     // Ignore if behind too far
     if (std::abs(relativeAngle) > 90 || distance > maxDistance) { 
       continue;
