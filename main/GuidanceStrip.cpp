@@ -11,6 +11,8 @@ void GuidanceStrip::begin() {
 }
 
 void GuidanceStrip::setLED(uint16_t index, uint8_t r, uint8_t g, uint8_t b) {
+  if(batteryPercentage < BATTERY_WARNING_THRESHOLD && (index == 0 || index == numPixels-1)) return; //make room for battery warning
+  
   if (index < numPixels) {
     strip.setPixelColor(index, strip.Color(r, g, b));
   }
@@ -46,6 +48,10 @@ void GuidanceStrip::setState(uint8_t newState) {
   update();
 }
 
+void GuidanceStrip::setBatteryPercentage(uint8_t b) {
+  batteryPercentage = b;
+}
+
 
 
 // -------------------------------------------
@@ -67,19 +73,27 @@ void GuidanceStrip::showSelector(uint8_t numColors, uint8_t colors[4], int8_t cu
     lastBlinkTime = now;
   }
 
+  struct RGB {
+    uint8_t r, g, b;
+  };
+
+
+
+  RGB palette[4];
+
   // Choose palette based on numColors
-  uint32_t palette[4];
   if (numColors == 2) {
     // Game select: yellow and light blue
-    palette[0] = strip.Color(255, 255, 0);   // Yellow
-    palette[1] = strip.Color(0, 255, 255);   // Light Blue
-    palette[2] = palette[3] = 0;             // unused
+    palette[0] = {255, 255, 0};   // Yellow
+    palette[1] = {0, 255, 255};   // Light Blue
+    palette[2] = {0, 0, 0};       // unused
+    palette[3] = {0, 0, 0};       // unused
   } else {
     // Team select: original 4 colors
-    palette[0] = strip.Color(255, 0, 0);     // Red
-    palette[1] = strip.Color(0, 0, 255);     // Blue
-    palette[2] = strip.Color(0, 255, 0);     // Green
-    palette[3] = strip.Color(255, 0, 255);   // Purple
+    palette[0] = {255, 0, 0};     // Red
+    palette[1] = {0, 0, 255};     // Blue
+    palette[2] = {0, 255, 0};     // Green
+    palette[3] = {255, 0, 255};   // Purple
   }
 
   // Draw each of the 4 sections
@@ -87,16 +101,17 @@ void GuidanceStrip::showSelector(uint8_t numColors, uint8_t colors[4], int8_t cu
   int start = 0;
   for (uint8_t section = 0; section < 4; section++) {
     uint8_t colorIndex = colors[section] % numColors;
-    uint32_t color = palette[colorIndex];
-
+    
+    RGB color = palette[colorIndex];
+    
     uint16_t extra = (section < remainder) ? 1 : 0;
     uint16_t end = start + sectionSize + extra;
 
     for (uint16_t i = start; i < end; i++) {
       if (section == currentPlace && blinkState) {
-        strip.setPixelColor(i, 0, 0, 0); // Off during blink
+        setLED(i, 0, 0, 0); // Off during blink
       } else {
-        strip.setPixelColor(i, color);
+        setLED(i, color.r, color.g, color.b);
       }
     }
     start = end; // next section starts where this one ended
@@ -104,6 +119,7 @@ void GuidanceStrip::showSelector(uint8_t numColors, uint8_t colors[4], int8_t cu
 
   show();
 }
+
 
 
 void GuidanceStrip::showBrightnessPreview() {
@@ -118,6 +134,48 @@ void GuidanceStrip::showBrightnessPreview() {
   setLED(numPixels-1, 255, 255, 255);
 
   show();
+}
+
+void GuidanceStrip::showBatteryLevel() {
+  int totalBarLEDs = 10;                 
+  int start = numPixels/2 - totalBarLEDs/2;
+  
+  int litLEDs = round((batteryPercentage / 100.0) * totalBarLEDs);
+  if (batteryPercentage > 0 && litLEDs == 0) {   //Ensure 1 LED lights for 1–5%
+    litLEDs = 1;
+  }
+
+  for (int i = 0; i < totalBarLEDs; i++) {
+    if (i < litLEDs) {
+      uint8_t r, g, b;
+
+      if (batteryPercentage < 20) {
+        r = 255; g = 0; b = 0;
+      } else if (batteryPercentage < 30) {
+        r = 255; g = 255; b = 0;
+      } else {
+        r = 0; g = 255; b = 0;
+      }
+
+      setLED(start + i, r, g, b);
+    } else {
+      // Unlit LEDs dim gray
+      setLED(start + i, 50, 50, 50);
+    }
+  }
+
+  show();
+}
+
+void GuidanceStrip::showBatteryWarning() {
+  if (batteryPercentage < BATTERY_WARNING_THRESHOLD) {
+    uint32_t color = strip.Color(255, 0, 0);
+
+    strip.setPixelColor(0, color);
+    strip.setPixelColor(numPixels - 1, color);
+  }
+
+  strip.show();
 }
 
 
@@ -411,9 +469,6 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
   }
 }
 
-
-
-
 void GuidanceStrip::update() {
   clear();
 
@@ -473,6 +528,10 @@ void GuidanceStrip::update() {
       clear();
       break;
     }
+  }
+
+  if(batteryPercentage < 20) {
+    showBatteryWarning();
   }
 }
 

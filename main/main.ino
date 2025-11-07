@@ -30,6 +30,8 @@ const uint32_t GPSBaud = 57600;
 #define BUTTON_PIN_3 39
 #define BUTTON_PIN_4 37
 
+#define BATTERY_PIN 0 //TODO
+
 
 
 //--- IMU Calibration ---
@@ -132,6 +134,9 @@ void setup() {
   pinMode(BUTTON_PIN_3, INPUT_PULLUP);
   pinMode(BUTTON_PIN_4, INPUT_PULLUP);
 
+  pinMode(BATTERY_PIN, INPUT);
+
+
 
 
   // ---------------- FREE RTOS -----------------
@@ -145,11 +150,24 @@ void setup() {
   xTaskCreate(update_location_task, "update_location_task", 8192, NULL, 3, NULL);
   xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
   xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
+  xTaskCreate(battery_check_task, "battery_check_task", 8192, NULL, 8, NULL);
 
+
+  
+  
+  //---------------- SHOW BATTERY LEVEL ON STARTUP ----------------
+  gs.setBatteryPercentage(getBatteryPercentage());
+  gs.showBatteryLevel();
+  delay(3000);
+  
+  
+  
    //gs.addObjective(-83.7154600000,42.2925150000);
    gs.addObjective(-83.71535421756761,42.292475859161556);
 
    //gs.setState(STATE_GUIDANCE);
+
+
 
 }
 
@@ -409,6 +427,18 @@ void send_packet_task(void *pvParameters) {
   }
 }
 
+// -------------------- BATTERY CHECK TASK --------------------
+void battery_check_task(void *pvParameters) {
+  const TickType_t xPeriod = pdMS_TO_TICKS(10000);
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();
+
+  for(;;) {
+    vTaskDelayUntil(&xLastWakeTime, xPeriod);
+    gs.setBatteryPercentage(getBatteryPercentage());
+  }
+}
+
 int lastGameCode = 0;
 int lastTeamCode = 0;
 void loop() {
@@ -436,4 +466,15 @@ void loop() {
   // 18:53:21.455 -> Location: 42.2925150000,-83.7154616670  Date/Time: 10/20/2025 22:53:21.30
   // 18:53:21.620 -> Location: 42.2925150000,-83.7154633330  Date/Time: 10/20/2025 22:53:21.50
 
+}
+
+
+uint8_t getBatteryPercentage() { //TODO
+  const double maxV = 4.2;
+  const double minV = 3.0;
+  
+  double voltage = 3.1; //double voltage = analogRead(BATTERY_PIN) * 3.3;
+  if (voltage > maxV) voltage = maxV;
+  if (voltage < minV) voltage = minV;
+  return (int)((voltage-minV)/(maxV-minV) * 100);
 }

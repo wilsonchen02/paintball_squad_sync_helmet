@@ -18,6 +18,8 @@
 
 #define MATE_TTL 3000 //refresh TTL to be change
 
+#define BATTERY_WARNING_THRESHOLD 20
+
 //COLORS
 typedef struct {
     int r;
@@ -96,11 +98,15 @@ public:
 
   void showSelector(uint8_t numColors, uint8_t colors[4], int8_t currentPlace);
   void showBrightnessPreview();
+  void showBatteryLevel();
+  void showBatteryWarning();
 
   uint8_t getState();
   uint8_t getGameCode();
   uint8_t getTeamCode();
   void setState(uint8_t newState);
+  void setBatteryPercentage(uint8_t batteryPercentage);
+
   void handlePhysicalInput(uint8_t input);
   void update();
 
@@ -116,6 +122,7 @@ public:
   bool isInSOS();
 
   void showMap();
+
 
 //        +Y (dy > 0)
 //         ↑
@@ -153,6 +160,7 @@ private:
   uint8_t teamSelectorColors[4] = {0, 0, 0, 0};
   uint8_t brightness;
   bool inSOS = false;
+  uint8_t batteryPercentage;
 
   std::vector<MapElement> mapElems;
 
