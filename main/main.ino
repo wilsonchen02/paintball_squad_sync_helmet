@@ -150,7 +150,7 @@ void setup() {
   xTaskCreate(update_location_task, "update_location_task", 8192, NULL, 3, NULL);
   xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
   xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
-  xTaskCreate(battery_check_task, "battery_check_task", 8192, NULL, 8, NULL);
+  xTaskCreate(battery_check_task, "battery_check_task", 8192, NULL, 10, NULL);
 
 
   
@@ -427,6 +427,8 @@ void send_packet_task(void *pvParameters) {
   }
 }
 
+
+bool shutdown = false;
 // -------------------- BATTERY CHECK TASK --------------------
 void battery_check_task(void *pvParameters) {
   const TickType_t xPeriod = pdMS_TO_TICKS(10000);
@@ -436,6 +438,17 @@ void battery_check_task(void *pvParameters) {
   for(;;) {
     vTaskDelayUntil(&xLastWakeTime, xPeriod);
     gs.setBatteryPercentage(getBatteryPercentage());
+
+    if(getBatteryPercentage() < 1) {
+        shutdown = true;
+        gs.clear();
+        gs.show();
+
+        Serial.println("deeeeeeep sleeeeeep");
+        Serial.flush();
+
+        esp_deep_sleep_start();
+    }
   }
 }
 
@@ -457,7 +470,7 @@ void loop() {
   // Serial.println("-----");
 
 
-  gs.update();
+  if(!shutdown) gs.update();
 
   //the tree, roughly
   //18:53:21.125 -> Location: 42.2925150000,-83.7154600000  Date/Time: 10/20/2025 22:53:21.00
@@ -473,7 +486,7 @@ uint8_t getBatteryPercentage() { //TODO
   const double maxV = 4.2;
   const double minV = 3.0;
   
-  double voltage = 3.1; //double voltage = analogRead(BATTERY_PIN) * 3.3;
+  double voltage = 3.6; //double voltage = analogRead(BATTERY_PIN) * 3.3;
   if (voltage > maxV) voltage = maxV;
   if (voltage < minV) voltage = minV;
   return (int)((voltage-minV)/(maxV-minV) * 100);
