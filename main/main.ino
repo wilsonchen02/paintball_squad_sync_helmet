@@ -163,8 +163,11 @@ void setup() {
   
   
    //gs.addObjective(-83.7154600000,42.2925150000);
-   gs.addObjective(-83.71535421756761,42.292475859161556);
+   //gs.addObjective(-83.71535421756761,42.292475859161556);
 
+    gs.addObjective(-83.71617405550215, 42.291997783396106); //tower
+    gs.addObjective(-83.71708225140911, 42.29157850920744); //pierpont
+    gs.addObjective(-83.71492621548347, 42.29163878078494); //dude
    //gs.setState(STATE_GUIDANCE);
 
 

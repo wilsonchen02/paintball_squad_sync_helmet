@@ -37,8 +37,8 @@ typedef struct {
 
 #define TIME_ENGAGED 10000 //ms
 
-#define MAX_DISTANCE 100
-#define MIN_DISTANCE 0.01
+#define MAX_DISTANCE 200 //in meters
+#define MIN_DISTANCE 3
 
 
 

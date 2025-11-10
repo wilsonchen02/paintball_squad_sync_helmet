@@ -292,16 +292,38 @@ void GuidanceStrip::showMap() {
   // --- Tuning Parameters for Brightness ---
   const float minDistance = MIN_DISTANCE;   // Objects closer than this are at full brightness
   const float maxDistance = MAX_DISTANCE;  // Objects farther than this are not shown.
-  const float minBrightnessFactor = 0.01;   // Minimum brightness for objects at maxDistance as a percentage
+  const float minBrightnessFactor =  0.5f / brightness;   // Minimum brightness for objects at maxDistance as a percentage
   
-  //TODO: set priorities for which mapelement types overtake others
+  std::vector<float> ledBrightness(numPixels, 0.0f); 
+  std::vector<Color> ledColor(numPixels, {0, 0, 0}); 
+  std::vector<int> ledPriority(numPixels, 0);
+  
   for(auto &elem : mapElems) {
     float dx = elem.x - myX;
     float dy = elem.y - myY;
 
-    // Calculate the distance to the element
-    // (Pythagorean theorem: a^2 + b^2 = c^2)
-    float distance = sqrt(dx * dx + dy * dy);
+    // // Calculate the distance to the element
+    // // (Pythagorean theorem: a^2 + b^2 = c^2)
+    // float distance = sqrt(dx * dx + dy * dy);
+
+    // --- Calculate geodesic distance using the Haversine formula ---
+    const float R = 6371000.0f; // Earth radius in meters
+
+    float lat1 = radians(myY);
+    float lon1 = radians(myX);
+    float lat2 = radians(elem.y);
+    float lon2 = radians(elem.x);
+
+    float dLat = lat2 - lat1;
+    float dLon = lon2 - lon1;
+
+    float a = sin(dLat / 2) * sin(dLat / 2) +
+              cos(lat1) * cos(lat2) *
+              sin(dLon / 2) * sin(dLon / 2);
+
+    float c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    float distance = R * c; // Distance in meters
 
     // Calculate the angle
     float targetBearingDeg = atan2(dx, dy) * 180.0 / PI;
@@ -341,21 +363,46 @@ void GuidanceStrip::showMap() {
       brightnessFactor = 1.0; // At max brightness if closer than minDistance
     } else {
       // As distance increases, brightnessFactor decreases from 1.0 to 0.0
-      brightnessFactor = (maxDistance - distance) / (maxDistance - minDistance);
+      //brightnessFactor = (maxDistance - distance) / (maxDistance - minDistance); //linear
+      brightnessFactor = exp(-4 * (distance - minDistance) / (maxDistance - minDistance)); //exponential decay
     }
     
-    // Scale so it doesn't go totally out until hitting minimum
+    //ensure far lights stay on
     brightnessFactor = minBrightnessFactor + (brightnessFactor * (1.0 - minBrightnessFactor));
+    
+    Serial.println(elem.type);
+    Serial.println(brightnessFactor);
+    Serial.println(distance);
+    Serial.println("----------");
+
+
+    if (distance > 9999) continue; //hard limit
+
 
     uint8_t r = elem.r * brightnessFactor;
     uint8_t g = elem.g * brightnessFactor;
     uint8_t b = elem.b * brightnessFactor;
 
+
+    int elemPriority = elem.type == MATE_ELEM ? 1 : 0;
+
     float fraction = (relativeAngle + 90.0) / 180.0;
     int ledIndex = round(fraction * (numPixels - 1));
 
-    setLED(ledIndex, r, g, b);
+    //only set LED if priority is higher or if priority is equal and brightness is higher
+    if (elemPriority > ledPriority[ledIndex] ||
+       (elemPriority == ledPriority[ledIndex] && brightnessFactor > ledBrightness[ledIndex])) {
+        ledPriority[ledIndex] = elemPriority;
+        ledBrightness[ledIndex] = brightnessFactor;
+        ledColor[ledIndex] = {r, g, b};
+    }
   }
+  
+  // set all LED colors
+  for (int i = 0; i < numPixels; i++) {
+    setLED(i, ledColor[i].r, ledColor[i].g, ledColor[i].b);
+  }
+  
   show();
 }
 
@@ -393,9 +440,6 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
           break;
         }
         case STATE_BRIGHTNESS: { //UNUSED
-          //TODO: determine reasonable brightness threshold
-          brightness += 2;
-
           break;
         }
         case STATE_GUIDANCE: {
@@ -431,19 +475,18 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
           break;
         }
         case STATE_BRIGHTNESS: { //UNUSED
-          //TODO: determine reasonable brightness threshold
-          brightness -= 2;
           break;
         }
         case STATE_GUIDANCE: {
           //signal that I am engaged
-          //TODO: sends a message that will result in mateEngaged(mac) being called for others
+          //on the outside, sends a message that will result in mateEngaged(mac) being called for others
           break;
         }
       }
       break;
 
       case 3: // Brightness button pressed
+        //TODO: determine reasonable brightness threshold
         brightness+=2;
         if(brightness > 10) brightness = 1;
         setBrightness(brightness);
@@ -453,10 +496,10 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
         switch (state) {
           case STATE_GUIDANCE: {
             if(!inSOS) {
-            //TODO: sends a message that will result in mateSOS(mac) being called for others
+            //on the outside, sends a message that will result in mateSOS(mac) being called for others
             }
             else {
-              //TODO: sends a message that will result in clearSOS() being called for others
+              //on the outside, sends a message that will result in clearSOS() being called for others
             }
             break;
           }
