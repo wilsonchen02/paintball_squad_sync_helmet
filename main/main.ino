@@ -30,7 +30,7 @@ const uint32_t GPSBaud = 57600;
 #define BUTTON_PIN_3 39
 #define BUTTON_PIN_4 37
 
-#define BATTERY_PIN 0 //TODO
+#define BATTERY_PIN 11
 
 
 
@@ -134,6 +134,7 @@ void setup() {
   pinMode(BUTTON_PIN_3, INPUT_PULLUP);
   pinMode(BUTTON_PIN_4, INPUT_PULLUP);
 
+  //-------------- BATTERY PIN SETUP --------------
   pinMode(BATTERY_PIN, INPUT);
 
 
@@ -156,7 +157,13 @@ void setup() {
   
   
   //---------------- SHOW BATTERY LEVEL ON STARTUP ----------------
-  gs.setBatteryPercentage(getBatteryPercentage());
+  uint16_t avg_percentage = 0;
+  for(uint8_t i = 0; i < 10; i++) {
+    avg_percentage += getBatteryPercentage();
+    delay(100);
+  }
+  avg_percentage /= 10;
+  gs.setBatteryPercentage(avg_percentage);
   gs.showBatteryLevel();
   delay(3000);
   
@@ -434,13 +441,25 @@ void send_packet_task(void *pvParameters) {
 bool shutdown = false;
 // -------------------- BATTERY CHECK TASK --------------------
 void battery_check_task(void *pvParameters) {
-  const TickType_t xPeriod = pdMS_TO_TICKS(10000);
+  const TickType_t xPeriod = pdMS_TO_TICKS(1000);
   TickType_t xLastWakeTime;
+  uint8_t count = 0;
+  uint8_t avg_percentage = 0;
+  uint16_t total = 0; // For adding the battery values over 10 samples
   xLastWakeTime = xTaskGetTickCount();
 
   for(;;) {
     vTaskDelayUntil(&xLastWakeTime, xPeriod);
-    gs.setBatteryPercentage(getBatteryPercentage());
+    // Take 10 samples from the ADC to stabilize value read
+    if(count < 10) {
+      total += getBatteryPercentage();
+      count++;
+    }
+    else {
+      avg_percentage = total / 10;
+      gs.setBatteryPercentage(avg_percentage);
+      count = 0;
+    }
 
     if(getBatteryPercentage() < 1) {
         shutdown = true;
@@ -486,11 +505,16 @@ void loop() {
 
 
 uint8_t getBatteryPercentage() { //TODO
-  const double maxV = 4.2;
-  const double minV = 3.0;
+  const uint16_t max_raw = 2720;  // ~4.08V
+  const uint16_t min_raw = 2340;    // ~3.3V
   
-  double voltage = 3.6; //double voltage = analogRead(BATTERY_PIN) * 3.3;
-  if (voltage > maxV) voltage = maxV;
-  if (voltage < minV) voltage = minV;
-  return (int)((voltage-minV)/(maxV-minV) * 100);
+  uint16_t raw_adc_val = analogRead(BATTERY_PIN);
+  double voltage = raw_adc_val * 3.1 / 4096;
+  Serial.printf("Raw ADC value: %i\n", raw_adc_val);
+  Serial.printf("Voltage: %d\n", voltage);
+  // TEMP: for testing
+  // double voltage = 3.6; //double voltage = analogRead(BATTERY_PIN) * 3.3;
+  if (raw_adc_val > max_raw) raw_adc_val = max_raw;
+  if (raw_adc_val < min_raw) raw_adc_val = min_raw;
+  return (int)((float)(raw_adc_val-min_raw)/(max_raw-min_raw) * 100);
 }

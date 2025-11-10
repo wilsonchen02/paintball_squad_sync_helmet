@@ -370,10 +370,10 @@ void GuidanceStrip::showMap() {
     //ensure far lights stay on
     brightnessFactor = minBrightnessFactor + (brightnessFactor * (1.0 - minBrightnessFactor));
     
-    Serial.println(elem.type);
-    Serial.println(brightnessFactor);
-    Serial.println(distance);
-    Serial.println("----------");
+    // Serial.println(elem.type);
+    // Serial.println(brightnessFactor);
+    // Serial.println(distance);
+    // Serial.println("----------");
 
 
     if (distance > 9999) continue; //hard limit
