@@ -459,6 +459,7 @@ void battery_check_task(void *pvParameters) {
       avg_percentage = total / 10;
       gs.setBatteryPercentage(avg_percentage);
       count = 0;
+      total = 0;
     }
 
     if(getBatteryPercentage() < 1) {
@@ -509,12 +510,14 @@ uint8_t getBatteryPercentage() { //TODO
   const uint16_t min_raw = 2340;    // ~3.3V
   
   uint16_t raw_adc_val = analogRead(BATTERY_PIN);
-  double voltage = raw_adc_val * 3.1 / 4096;
-  Serial.printf("Raw ADC value: %i\n", raw_adc_val);
-  Serial.printf("Voltage: %d\n", voltage);
-  // TEMP: for testing
-  // double voltage = 3.6; //double voltage = analogRead(BATTERY_PIN) * 3.3;
+  
+  // double voltage = raw_adc_val * 3.1 / 4096;
+  // Serial.printf("Raw ADC value: %i\n", raw_adc_val);
+  // Serial.printf("Voltage: %d\n", voltage);
+
   if (raw_adc_val > max_raw) raw_adc_val = max_raw;
   if (raw_adc_val < min_raw) raw_adc_val = min_raw;
+
+  //return 100; //for testing
   return (int)((float)(raw_adc_val-min_raw)/(max_raw-min_raw) * 100);
 }
