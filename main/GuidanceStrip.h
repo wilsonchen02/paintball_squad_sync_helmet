@@ -160,7 +160,7 @@ private:
   uint8_t teamSelectorColors[4] = {0, 0, 0, 0};
   uint8_t brightness;
   bool inSOS = false;
-  uint8_t batteryPercentage;
+  uint8_t batteryPercentage = 100;
 
   std::vector<MapElement> mapElems;
 

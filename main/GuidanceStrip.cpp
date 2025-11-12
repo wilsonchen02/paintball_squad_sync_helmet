@@ -514,6 +514,7 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
 
 void GuidanceStrip::update() {
   clear();
+  if(batteryPercentage < 1) return;
 
   // time to live - remove expired elements
   uint32_t now = millis();

@@ -70,6 +70,8 @@ QueueHandle_t m_rx_queue = espnow::m_rx_queue;
 
 QueueHandle_t xButtonQueue;
 
+TaskHandle_t xBatteryCheckTaskHandle = NULL;
+
 
 void setup() {
 
@@ -151,9 +153,9 @@ void setup() {
   xTaskCreate(update_location_task, "update_location_task", 8192, NULL, 3, NULL);
   xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
   xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
-  xTaskCreate(battery_check_task, "battery_check_task", 8192, NULL, 10, NULL);
+  xTaskCreate(battery_check_task, "battery_check_task", 8192, NULL, 10, &xBatteryCheckTaskHandle);
 
-
+  vTaskSuspend(xBatteryCheckTaskHandle);
   
   
   //---------------- SHOW BATTERY LEVEL ON STARTUP ----------------
@@ -168,6 +170,16 @@ void setup() {
   delay(3000);
   
   
+
+
+
+  
+  vTaskResume(xBatteryCheckTaskHandle);
+
+
+
+
+
   
    //gs.addObjective(-83.7154600000,42.2925150000);
    //gs.addObjective(-83.71535421756761,42.292475859161556);
@@ -176,7 +188,6 @@ void setup() {
     gs.addObjective(-83.71708225140911, 42.29157850920744); //pierpont
     gs.addObjective(-83.71492621548347, 42.29163878078494); //dude
    //gs.setState(STATE_GUIDANCE);
-
 
 
 }
@@ -448,6 +459,7 @@ void battery_check_task(void *pvParameters) {
   uint16_t total = 0; // For adding the battery values over 10 samples
   xLastWakeTime = xTaskGetTickCount();
 
+  
   for(;;) {
     vTaskDelayUntil(&xLastWakeTime, xPeriod);
     // Take 10 samples from the ADC to stabilize value read
@@ -464,12 +476,13 @@ void battery_check_task(void *pvParameters) {
 
     if(getBatteryPercentage() < 1) {
         shutdown = true;
-        gs.clear();
-        gs.show();
 
         Serial.println("deeeeeeep sleeeeeep");
         Serial.flush();
-
+        
+        gs.clear();
+        gs.show();
+        
         esp_deep_sleep_start();
     }
   }
@@ -489,7 +502,7 @@ void loop() {
 
   // Serial.println(longitude);
   // Serial.println(latitude);
-  // Serial.println(heading);
+  //Serial.println(heading);
   // Serial.println("-----");
 
 
