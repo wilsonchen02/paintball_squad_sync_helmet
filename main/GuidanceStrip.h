@@ -148,6 +148,69 @@ public:
     // };
 
 
+
+//TODO: Set actual minimums for different brightness levels (requires testing in sunshine/night)
+
+//READ BEFORE CHANGING: if you are changing values here, add to the original values 
+//                      instead of replacing them, as these are the actual LED minimums
+//                      required for any light to show at all
+float getMinBrightnessFactor(int key) {
+  switch (key) {
+    case 1:
+      return 0.51;
+    case 2:
+      return 0.34;
+    case 3:
+      return 0.26;
+    case 5:
+      return 0.17;
+    case 7:
+      return 0.13;
+    case 10:
+      return 0.10;
+    case 20:
+      return 0.06;
+    case 50:
+      return 0.03;
+    case 100:
+      return 0.02;    
+    case 150:
+      return 0.01;
+    
+    default:
+      return 0.01;
+  }
+}
+
+int getNextBrightness(int key) {
+  switch (key) {
+    case 1:
+      return 2;
+    case 2:
+      return 3;
+    case 3:
+      return 5;
+    case 5:
+      return 7;
+    case 7:
+      return 10;
+    case 10:
+      return 20;
+    case 20:
+      return 50;
+    case 50:
+      return 100;
+    case 100:
+      return 1;    
+    
+    default:
+      return 1;
+  }
+}
+
+
+
+
 private:
   Adafruit_NeoPixel strip;
   uint16_t numPixels;

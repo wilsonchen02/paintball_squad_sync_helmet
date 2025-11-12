@@ -257,11 +257,10 @@ void GuidanceStrip::mateSOS() {
 
 void GuidanceStrip::clearSOS() {
   inSOS = false;
-        Serial.println("1231234");
+
   for (auto &elem : mapElems) {
     if (elem.type == MATE_ELEM) {
       // update color
-      Serial.println("HEYyYYYYYYYY");
       Color c = COLOR_MATE;
       elem.r = c.r;
       elem.g = c.g;
@@ -291,8 +290,8 @@ bool GuidanceStrip::isInSOS() {
 void GuidanceStrip::showMap() {
   // --- Tuning Parameters for Brightness ---
   const float minDistance = MIN_DISTANCE;   // Objects closer than this are at full brightness
-  const float maxDistance = MAX_DISTANCE;  // Objects farther than this are not shown.
-  const float minBrightnessFactor =  0.5f / brightness;   // Minimum brightness for objects at maxDistance as a percentage
+  const float maxDistance = MAX_DISTANCE;  // Objects farther than this are shown at minimum brightness
+  const float minBrightnessFactor =  getMinBrightnessFactor(brightness);  // Minimum brightness for objects at maxDistance as a percentage
   
   std::vector<float> ledBrightness(numPixels, 0.0f); 
   std::vector<Color> ledColor(numPixels, {0, 0, 0}); 
@@ -352,8 +351,8 @@ void GuidanceStrip::showMap() {
       continue;
     }
 
-    // Ignore if behind too far
-    if (std::abs(relativeAngle) > 90 || distance > maxDistance) { 
+    // Ignore if behind
+    if (std::abs(relativeAngle) > 90) { 
       continue;
     }
 
@@ -361,20 +360,20 @@ void GuidanceStrip::showMap() {
     float brightnessFactor;
     if (distance < minDistance) {
       brightnessFactor = 1.0; // At max brightness if closer than minDistance
-    } else {
+    } 
+    else if (distance > maxDistance) {
+      brightnessFactor = 0;
+    }
+    else {
       // As distance increases, brightnessFactor decreases from 1.0 to 0.0
-      //brightnessFactor = (maxDistance - distance) / (maxDistance - minDistance); //linear
-      brightnessFactor = exp(-4 * (distance - minDistance) / (maxDistance - minDistance)); //exponential decay
+      brightnessFactor = (maxDistance - distance) / (maxDistance - minDistance); //linear
+      //brightnessFactor = exp(-4 * (distance - minDistance) / (maxDistance - minDistance)); //exponential decay
     }
     
-    //ensure far lights stay on
+    //ensure lights stay on regardless of brightness
+    //(is a value between minBrightnessFactor and 1)
     brightnessFactor = minBrightnessFactor + (brightnessFactor * (1.0 - minBrightnessFactor));
     
-    // Serial.println(elem.type);
-    // Serial.println(brightnessFactor);
-    // Serial.println(distance);
-    // Serial.println("----------");
-
 
     if (distance > 9999) continue; //hard limit
 
@@ -396,6 +395,16 @@ void GuidanceStrip::showMap() {
         ledBrightness[ledIndex] = brightnessFactor;
         ledColor[ledIndex] = {r, g, b};
     }
+
+
+    // Serial.println(elem.type);
+    //  Serial.println(brightnessFactor);
+    //  Serial.println(distance);
+    //  Serial.println(minBrightnessFactor);
+    // Serial.println(brightness);
+    //  Serial.print(r); Serial.print(", "); Serial.print(g); Serial.print(", "); Serial.println(b);
+    //  Serial.println("----------");
+
   }
   
   // set all LED colors
@@ -486,10 +495,7 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
       break;
 
       case 3: // Brightness button pressed
-        //TODO: determine reasonable brightness threshold
-        brightness+=2;
-        if(brightness > 10) brightness = 1;
-        setBrightness(brightness);
+        setBrightness(getNextBrightness(brightness));
         break;
 
       case 4: // Button 1 held down
