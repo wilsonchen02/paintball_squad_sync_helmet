@@ -440,12 +440,12 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
       switch (state) {
         case STATE_GAME_SELECT: {
           if(++gameSelectorPos > 3) gameSelectorPos = 0;
-          update();
+          //update();
           break;
         }
         case STATE_TEAM_SELECT: {
           if(++teamSelectorPos > 3) teamSelectorPos = 0;
-          update();
+          //update();
           break;
         }
         case STATE_BRIGHTNESS: { //UNUSED
@@ -465,22 +465,22 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
         case STATE_GAME_SELECT: {
           gameSelectorColors[gameSelectorPos] = (gameSelectorColors[gameSelectorPos] + 1) % 2;
           gameCode =
-            gameSelectorColors[3] * pow(2, 3) +
-            gameSelectorColors[2] * pow(2, 2) +
+            gameSelectorColors[3] *     8     +
+            gameSelectorColors[2] *     4     +
             gameSelectorColors[1] *     2     +
             gameSelectorColors[0]
             + 1;
-          update();
+          //update();
           break;
         }
         case STATE_TEAM_SELECT: {
           teamSelectorColors[teamSelectorPos] = (teamSelectorColors[teamSelectorPos] + 1) % 4;
           teamCode =
-            teamSelectorColors[3] * pow(4, 3) +
-            teamSelectorColors[2] * pow(4, 2) +
+            teamSelectorColors[3] *     64    +
+            teamSelectorColors[2] *     16    +
             teamSelectorColors[1] *     4     +
             teamSelectorColors[0];
-          update();
+          //update();
           break;
         }
         case STATE_BRIGHTNESS: { //UNUSED

@@ -14,6 +14,8 @@ public:
   void setOffset(float offsetDegrees);
   void setCurrentHeadingToZero(uint8_t headingMode);
 
+  bool enableReport(uint8_t headingMode);
+
 
   void setCalibration(float xMin = 0, float xMax = 0,
                       float yMin = 0, float yMax = 0);

@@ -34,21 +34,33 @@ bool IMU_BNO085::begin() {
   Serial.println("BNO085 initialized over UART");
 
   // Enable all reports we may need
-  bno.enableReport(SH2_ROTATION_VECTOR);
-  bno.enableReport(SH2_GEOMAGNETIC_ROTATION_VECTOR);
-  bno.enableReport(SH2_MAGNETIC_FIELD_UNCALIBRATED);
-  bno.enableReport(SH2_GAME_ROTATION_VECTOR);
-  bno.enableReport(SH2_ACCELEROMETER);
-  bno.enableReport(SH2_GYROSCOPE_CALIBRATED);
-  bno.enableReport(SH2_MAGNETIC_FIELD_CALIBRATED);
+  // bno.enableReport(SH2_ROTATION_VECTOR);
+  // bno.enableReport(SH2_GEOMAGNETIC_ROTATION_VECTOR);
+  // bno.enableReport(SH2_MAGNETIC_FIELD_UNCALIBRATED);
+  // bno.enableReport(SH2_GAME_ROTATION_VECTOR);
+  // bno.enableReport(SH2_ACCELEROMETER);
+  // bno.enableReport(SH2_GYROSCOPE_CALIBRATED);
+  // bno.enableReport(SH2_MAGNETIC_FIELD_CALIBRATED);
 
   delay(100);
   return true;
 }
 
+bool IMU_BNO085::enableReport(uint8_t headingMode) {
+ return bno.enableReport(headingMode);
+}
+
 bool IMU_BNO085::read() {
+
+  if (bno.wasReset()) {
+    Serial.println("IMU was reset! Re-enabling report.");
+    enableReport(SH2_GAME_ROTATION_VECTOR);
+  }
+
+
   if (!bno.getSensorEvent(&sensorValue))
     return false;
+
 
   switch (sensorValue.sensorId) {
     case SH2_ROTATION_VECTOR:

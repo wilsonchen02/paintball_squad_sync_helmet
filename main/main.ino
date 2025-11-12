@@ -85,6 +85,8 @@ void setup() {
     Serial.println("Failed to find IMU!");
     while (1) delay(10);
   }
+
+  imu.enableReport(HEADING_MODE);
   
   // imu.setCalibration(
   //   X_MIN, X_MAX,               // x min/max
@@ -148,8 +150,11 @@ void setup() {
 
   //---- TASKS -----
 
-  xTaskCreate(button_poll_task, "button_poll_task", 4096, NULL, 1, NULL);
+  xTaskCreate(button_poll_task, "button_poll_task", 4096, NULL, 8, NULL);
   xTaskCreate(button_handler_task, "button_handler_task", 4096, NULL, 5, NULL);
+  
+  xTaskCreate(imu_read_task, "imu_read_task", 4096, NULL, 7, NULL); 
+
   xTaskCreate(update_location_task, "update_location_task", 8192, NULL, 3, NULL);
   xTaskCreate(parse_packet_task, "parse_packet_task", 8192, NULL, 3, NULL);
   xTaskCreate(send_packet_task, "send_packet_task", 8192, NULL, 3, NULL);
@@ -232,7 +237,7 @@ void button_poll_task(void *pvParameters) {
           buttonID = i + 1;          // 1,2,3,4 for short presses
         }
 
-        xQueueSend(xButtonQueue, &buttonID, 0);
+        xQueueSend(xButtonQueue, &buttonID, pdMS_TO_TICKS(10));
       }
 
       lastState[i] = state;
@@ -433,7 +438,7 @@ void parse_packet_task(void* pvParameters) {
 
 // ----------- SEND PACKET TASK ---------------
 void send_packet_task(void *pvParameters) {
-  const TickType_t xPeriod = pdMS_TO_TICKS(500);
+  const TickType_t xPeriod = pdMS_TO_TICKS(10);
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
 
@@ -488,23 +493,42 @@ void battery_check_task(void *pvParameters) {
   }
 }
 
+// -------------------- IMU READ TASK -------------------- 
+//CURRENTLY NOT IN USE
+void imu_read_task(void *pvParameters) {
+
+  const TickType_t xPeriod = pdMS_TO_TICKS(500);
+  TickType_t xLastWakeTime;
+
+  xLastWakeTime = xTaskGetTickCount();
+
+  for (;;) {
+    vTaskDelayUntil(&xLastWakeTime, xPeriod);
+
+    // if(imu.read()) {
+    //   heading = imu.getHeading(HEADING_MODE);
+    // }
+  }
+
+}
+
 int lastGameCode = 0;
 int lastTeamCode = 0;
 void loop() {
 
-   if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
-   if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
-   
-     if(imu.read())
-       heading = imu.getHeading(HEADING_MODE); //for the BNO085
+  //  if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
+  //  if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
     
-    gps.update();
+   gps.update();
+
+  if(imu.read()) {
+      heading = imu.getHeading(HEADING_MODE);
+  }
+  
 
   // Serial.println(longitude);
   // Serial.println(latitude);
-  //Serial.println(heading);
-  // Serial.println("-----");
-
+  Serial.println(heading);
 
   if(!shutdown) gs.update();
 
