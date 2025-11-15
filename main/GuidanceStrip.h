@@ -37,7 +37,7 @@ typedef struct {
 
 #define TIME_ENGAGED 10000 //ms
 
-#define MAX_DISTANCE 200 //in meters
+#define MAX_DISTANCE 150 //in meters
 #define MIN_DISTANCE 3
 
 
@@ -121,7 +121,11 @@ public:
   void clearSOS();
   bool isInSOS();
 
+  uint8_t applyLinearBrightness(uint8_t v, float brightness);
+
   void showMap();
+
+
 
 
 //        +Y (dy > 0)

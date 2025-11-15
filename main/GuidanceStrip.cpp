@@ -287,6 +287,26 @@ bool GuidanceStrip::isInSOS() {
   return inSOS;
 }
 
+uint8_t GuidanceStrip::applyLinearBrightness(uint8_t v, float brightness) {
+    // sRGB to linear (approx: c^2.2)
+    float c = (v / 255.0f);
+    float lin = powf(c, 2.2f);
+
+    // apply brightness in linear space
+    lin *= brightness;
+
+    // linear to sRGB
+    float out = powf(lin, 1.0f / 2.2f);
+
+    // clamp and convert back to 0–255
+    if (out < 0.0f) out = 0.0f;
+    if (out > 1.0f) out = 1.0f;
+
+    return (uint8_t)(out * 255.0f + 0.5f);
+}
+
+
+
 void GuidanceStrip::showMap() {
   // --- Tuning Parameters for Brightness ---
   const float minDistance = MIN_DISTANCE;   // Objects closer than this are at full brightness
@@ -366,8 +386,8 @@ void GuidanceStrip::showMap() {
     }
     else {
       // As distance increases, brightnessFactor decreases from 1.0 to 0.0
-      brightnessFactor = (maxDistance - distance) / (maxDistance - minDistance); //linear
-      //brightnessFactor = exp(-4 * (distance - minDistance) / (maxDistance - minDistance)); //exponential decay
+      // brightnessFactor = (maxDistance - distance) / (maxDistance - minDistance); //linear
+      brightnessFactor = exp(-6 * (distance - minDistance) / (maxDistance - minDistance)); //exponential decay
     }
     
     //ensure lights stay on regardless of brightness
@@ -378,9 +398,9 @@ void GuidanceStrip::showMap() {
     if (distance > 9999) continue; //hard limit
 
 
-    uint8_t r = elem.r * brightnessFactor;
-    uint8_t g = elem.g * brightnessFactor;
-    uint8_t b = elem.b * brightnessFactor;
+    uint8_t r = applyLinearBrightness(elem.r, brightnessFactor);
+    uint8_t g = applyLinearBrightness(elem.g, brightnessFactor);
+    uint8_t b = applyLinearBrightness(elem.b, brightnessFactor);
 
 
     int elemPriority = elem.type == MATE_ELEM ? 1 : 0;

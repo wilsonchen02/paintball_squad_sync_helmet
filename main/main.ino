@@ -6,46 +6,75 @@
 
 
 
+// #define DEVKIT
+
+  const uint32_t GPSBaud = 57600;
+
+  #define HEADING_MODE SH2_GAME_ROTATION_VECTOR
+
+  #define MAX_LED_COUNT   75
+  #define LED_COUNT   49
+  #define DEFAULT_BRIGHTNESS   5
 
 //--- Pins ---
-#define LED_PIN   6
-#define MAX_LED_COUNT   75
-#define LED_COUNT   49
-#define DEFAULT_BRIGHTNESS   5
+#ifdef DEVKIT
+  #define BUILTIN_LED_PIN   48
 
-#define RX_PIN_GPS 44
-#define TX_PIN_GPS 43
-const uint32_t GPSBaud = 57600;
+  #define LED_PIN   6
 
-// #define SDA_PIN_IMU 8 //LIS2MDL
-// #define SCL_PIN_IMU 9  
+  #define RX_PIN_GPS 44
+  #define TX_PIN_GPS 43
 
-#define RX_PIN_IMU 17 //BNO085
-#define TX_PIN_IMU 18
-#define RESET_PIN_IMU 5
-#define HEADING_MODE SH2_GAME_ROTATION_VECTOR
+  // #define SDA_PIN_IMU 8 //LIS2MDL
+  // #define SCL_PIN_IMU 9  
 
-#define BUTTON_PIN_1 36
-#define BUTTON_PIN_2 35
-#define BUTTON_PIN_3 39
-#define BUTTON_PIN_4 37
+  #define RX_PIN_IMU 17 //BNO085
+  #define TX_PIN_IMU 18
+  #define RESET_PIN_IMU 5
 
-#define BATTERY_PIN 11
+  #define BUTTON_PIN_1 36
+  #define BUTTON_PIN_2 35
+  #define BUTTON_PIN_3 39
+  #define BUTTON_PIN_4 37
+
+  #define BATTERY_PIN 11
+#else
+  #define BUILTIN_LED_PIN   13
+
+  #define LED_PIN   15
+
+  #define RX_PIN_GPS 18
+  #define TX_PIN_GPS 17
+
+  // #define SDA_PIN_IMU 9 //LIS2MDL
+  // #define SCL_PIN_IMU 10  
+
+  #define RX_PIN_IMU 36 //BNO085
+  #define TX_PIN_IMU 37
+  #define RESET_PIN_IMU -1    //tied to reset button
+
+  #define BUTTON_PIN_1 4
+  #define BUTTON_PIN_2 5
+  #define BUTTON_PIN_3 6
+  #define BUTTON_PIN_4 7
+
+  #define BATTERY_PIN 11
+#endif
 
 
 
-//--- IMU Calibration ---
-#define X_MIN 69
-#define X_MAX 131
+// //--- IMU Calibration --- //LIS2MDL
+// #define X_MIN 69
+// #define X_MAX 131
 
-#define Y_MIN -210
-#define Y_MAX -157
+// #define Y_MIN -210
+// #define Y_MAX -157
 
-#define Z_MIN -16
-#define Z_MAX 84
+// #define Z_MIN -16
+// #define Z_MAX 84
 
-#define ROLL_BIAS -4
-#define PITCH_BIAS 0
+// #define ROLL_BIAS -4
+// #define PITCH_BIAS 0
 
 
 
@@ -74,6 +103,10 @@ TaskHandle_t xBatteryCheckTaskHandle = NULL;
 
 
 void setup() {
+
+
+  //----------- POWER LED -----------
+  rgbLedWrite(BUILTIN_LED_PIN, 1, 0, 0); 
 
   //----------- IMU SETUP -----------
   Serial.begin(115200);
@@ -438,7 +471,7 @@ void parse_packet_task(void* pvParameters) {
 
 // ----------- SEND PACKET TASK ---------------
 void send_packet_task(void *pvParameters) {
-  const TickType_t xPeriod = pdMS_TO_TICKS(10);
+  const TickType_t xPeriod = pdMS_TO_TICKS(500);
   TickType_t xLastWakeTime;
   xLastWakeTime = xTaskGetTickCount();
 
@@ -526,9 +559,11 @@ void loop() {
   }
   
 
-  // Serial.println(longitude);
-  // Serial.println(latitude);
-  Serial.println(heading);
+  // Serial.println(longitude, 7);
+  // Serial.println(latitude, 7);
+  // Serial.println(heading);
+  // Serial.println("---------------");
+
 
   if(!shutdown) gs.update();
 

@@ -12,7 +12,7 @@ IMU_BNO085::IMU_BNO085(uint8_t rxPin, uint8_t txPin, int8_t resetPin, float yawO
     calibAccel(0), calibGyro(0), calibMag(0) {}
 
 bool IMU_BNO085::begin() {
-  // Setup UART
+  // Setup UART  
   serial->begin(115200, SERIAL_8N1, rxPin, txPin);
   serial->setRxBufferSize(512); // must be >300
   serial->setTxBufferSize(512);
@@ -25,7 +25,8 @@ bool IMU_BNO085::begin() {
     delay(10);
     digitalWrite(resetPin, HIGH);
     delay(100);
-  }
+  }  
+
 
   if (!bno.begin_UART(serial)) {
     Serial.println("Failed to communicate with BNO085 over UART");
