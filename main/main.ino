@@ -6,7 +6,7 @@
 
 
 
-// #define DEVKIT
+ #define DEVKIT
 
   const uint32_t GPSBaud = 57600;
 
@@ -225,7 +225,10 @@ void setup() {
     gs.addObjective(-83.71617405550215, 42.291997783396106); //tower
     gs.addObjective(-83.71708225140911, 42.29157850920744); //pierpont
     gs.addObjective(-83.71492621548347, 42.29163878078494); //dude
-   //gs.setState(STATE_GUIDANCE);
+    
+    
+    
+    //gs.setState(STATE_GUIDANCE);
 
 
 }

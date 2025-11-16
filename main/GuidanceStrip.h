@@ -7,6 +7,9 @@
 #define STATE_TEAM_SELECT 1 
 #define STATE_GUIDANCE 2
 
+#define STATE_GPS_CONNECTING 5
+
+
 #define STATE_BRIGHTNESS 3 //UNUSED NOW 
 
 
@@ -100,6 +103,9 @@ public:
   void showBrightnessPreview();
   void showBatteryLevel();
   void showBatteryWarning();
+  void showGPSConnecting();
+  void showGPSConnected();
+
 
   uint8_t getState();
   uint8_t getGameCode();

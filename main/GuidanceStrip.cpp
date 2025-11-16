@@ -180,6 +180,49 @@ void GuidanceStrip::showBatteryWarning() {
 
 
 
+
+void GuidanceStrip::showGPSConnecting() {
+    static uint8_t gpsLitLEDs = 0;
+    static unsigned long gpsLastUpdate = 0;
+    const unsigned long GPS_STEP_INTERVAL = 1000; //ms
+
+    int totalBarLEDs = 5;
+    int start = numPixels/2 - totalBarLEDs/2;
+    unsigned long now = millis();
+
+    if (now - gpsLastUpdate >= GPS_STEP_INTERVAL) {
+      gpsLastUpdate = now;
+      gpsLitLEDs++;
+
+      if (gpsLitLEDs > totalBarLEDs)
+        gpsLitLEDs = 0; 
+    }
+
+    for (int i = 0; i < totalBarLEDs; i++) {
+      setLED(start + i, 50, 50, 50);
+    }
+
+    for (int i = 0; i < gpsLitLEDs; i++) {
+      setLED(start + i, 255, 255, 0);
+    }
+
+    show();
+}
+
+
+void GuidanceStrip::showGPSConnected() {
+    int totalBarLEDs = 5;
+    int start = numPixels/2 - totalBarLEDs/2;
+
+    for (int i = 0; i < totalBarLEDs; i++) {
+      setLED(start + i, 0, 255, 0);
+    }
+
+    show();
+}
+
+
+
 void GuidanceStrip::addMate(uint8_t mac[6], float x, float y) {
   // Check if element with same MAC already exists
   for (auto &elem : mapElems) {
@@ -453,7 +496,24 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
 
   switch (input) {
     case 0: // Mode button cycles states
-      setState((getState() + 1) % 3);
+      switch (state) {
+        case STATE_GAME_SELECT: {
+          setState(STATE_TEAM_SELECT);
+          break;
+        }
+        case STATE_TEAM_SELECT: {
+          setState(STATE_GUIDANCE);
+          break;
+        }
+        case STATE_GPS_CONNECTING: {
+          setState(STATE_GAME_SELECT);
+          break;
+        }
+        case STATE_GUIDANCE: {
+          setState(STATE_GAME_SELECT);
+          break;
+        }
+      }
       break;
 
     case 1: // Button 1 
@@ -589,7 +649,21 @@ void GuidanceStrip::update() {
     }
 
     case STATE_GUIDANCE: {
+      if(myX == 444) { //GPS not connected
+        setState(STATE_GPS_CONNECTING);
+      }
+
       showMap();
+      break;
+    }
+    case STATE_GPS_CONNECTING: {
+      if(myX != 444) { //GPS connected
+        showGPSConnected();
+        delay(2000);
+        setState(STATE_GUIDANCE);
+      }
+
+      showGPSConnecting();
       break;
     }
 
