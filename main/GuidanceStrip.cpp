@@ -637,7 +637,7 @@ void GuidanceStrip::update() {
     }
 
     case STATE_GUIDANCE: {
-      if(myX == 444) { //GPS not connected
+      if(myX == 444.0) { //GPS not connected
         setState(STATE_GPS_CONNECTING);
       }
 
@@ -645,10 +645,11 @@ void GuidanceStrip::update() {
       break;
     }
     case STATE_GPS_CONNECTING: {
-      if(myX != 444) { //GPS connected
+      if(myX != 444.0) { //GPS connected
         showGPSConnected();
         delay(2000);
         setState(STATE_GUIDANCE);
+        break;
       }
 
       showGPSConnecting();

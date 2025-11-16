@@ -226,7 +226,10 @@ void setup() {
     gs.addObjective(-83.71708225140911, 42.29157850920744); //pierpont
     gs.addObjective(-83.71492621548347, 42.29163878078494); //dude
     
-    
+    // Futureball demo
+    // gs.addObjective(-83.767000, 42.446000); // SE corner of parking lot
+    // gs.addObjective(-83.766694, 42.446361); // East entrance
+    // gs.addObjective(-83.767472, 42.446444); // NW path
     
     //gs.setState(STATE_GUIDANCE);
 
@@ -372,6 +375,7 @@ void update_location_task(void *pvParameters) {
     longitude = gps.getAverageLongitude();
 
     gs.setLocation(longitude, latitude, heading);
+    Serial.printf("Long: %.6f, Lat: %.6f, Heading: %.2f\n", longitude, latitude, heading);
     //Serial.println(longitude, 6);    Serial.println(latitude, 6); 
     //Serial.println(heading, 6);
     //Serial.println(heading, 1);
@@ -513,19 +517,22 @@ void battery_check_task(void *pvParameters) {
       gs.setBatteryPercentage(avg_percentage);
       count = 0;
       total = 0;
+
+      if(avg_percentage < 1) {
+          shutdown = true;
+
+          Serial.println("deeeeeeep sleeeeeep");
+          Serial.flush();
+          
+          gs.showBatteryLevel();
+
+          gs.clear();
+          gs.show();
+          
+          esp_deep_sleep_start();
+      }
     }
 
-    if(getBatteryPercentage() < 1) {
-        shutdown = true;
-
-        Serial.println("deeeeeeep sleeeeeep");
-        Serial.flush();
-        
-        gs.clear();
-        gs.show();
-        
-        esp_deep_sleep_start();
-    }
   }
 }
 
@@ -555,10 +562,10 @@ void loop() {
   //  if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
   //  if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
     
-   gps.update();
+  gps.update();
 
   if(imu.read()) {
-      heading = imu.getHeading(HEADING_MODE);
+    heading = imu.getHeading(HEADING_MODE);
   }
   
 
