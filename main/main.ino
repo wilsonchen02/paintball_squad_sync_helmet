@@ -14,7 +14,7 @@
 
   #define MAX_LED_COUNT   75
   #define LED_COUNT   49
-  #define DEFAULT_BRIGHTNESS   5
+  #define DEFAULT_BRIGHTNESS   20
 
 //--- Pins ---
 #ifdef DEVKIT

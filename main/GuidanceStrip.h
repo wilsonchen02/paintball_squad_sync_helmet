@@ -164,25 +164,25 @@ public:
 float getMinBrightnessFactor(int key) {
   switch (key) {
     case 1:
-      return 0.51;
+      return 0.22; //old: 0.51;
     case 2:
-      return 0.34;
+      return 0.10; //old: 0.34;
     case 3:
-      return 0.26;
+      return 0.05; //0.26;
     case 5:
-      return 0.17;
+      return 0.02; //0.17;
     case 7:
-      return 0.13;
+      return 0.02; //0.13
     case 10:
-      return 0.10;
+      return 0.006; //0.10
     case 20:
-      return 0.06;
+      return 0.002; //0.06;
     case 50:
-      return 0.03;
+      return 0.0003; //0.03;
     case 100:
-      return 0.02;    
+      return 0.00004; //0.02;    
     case 150:
-      return 0.01;
+      return 0.00002; //0.01;
     
     default:
       return 0.01;
