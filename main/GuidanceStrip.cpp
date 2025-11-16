@@ -528,9 +528,6 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
           //update();
           break;
         }
-        case STATE_BRIGHTNESS: { //UNUSED
-          break;
-        }
         case STATE_GUIDANCE: {
           //signal that I am out of the game
           //TODO: sends a message that will result in mateEliminated(mac) being called for others
@@ -561,9 +558,6 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
             teamSelectorColors[1] *     4     +
             teamSelectorColors[0];
           //update();
-          break;
-        }
-        case STATE_BRIGHTNESS: { //UNUSED
           break;
         }
         case STATE_GUIDANCE: {
@@ -639,12 +633,6 @@ void GuidanceStrip::update() {
       // Convert the 4 section color indices into a single value like base-4
       // e.g. colors = {0,1,3,0} → value = 0b00 11 01 00 (base-4)
       showSelector(4, teamSelectorColors, teamSelectorPos);
-      break;
-    }
-
-    case STATE_BRIGHTNESS: { //UNUSED
-      setBrightness(brightness);
-      showBrightnessPreview();
       break;
     }
 

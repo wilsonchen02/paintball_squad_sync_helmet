@@ -10,9 +10,6 @@
 #define STATE_GPS_CONNECTING 5
 
 
-#define STATE_BRIGHTNESS 3 //UNUSED NOW 
-
-
 #define BLINK_SPEED 100 //ms
 
 #define MATE_ELEM 0
