@@ -199,7 +199,7 @@ void GuidanceStrip::showGPSConnecting() {
     }
 
     for (int i = 0; i < totalBarLEDs; i++) {
-      setLED(start + i, 50, 50, 50);
+      setLED(start + i, 150, 150, 150);
     }
 
     for (int i = 0; i < gpsLitLEDs; i++) {
