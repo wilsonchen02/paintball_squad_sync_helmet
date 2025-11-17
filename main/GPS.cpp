@@ -77,10 +77,15 @@ void GPS::update() {
     while (ss.available() > 0) {
         if (gps.encode(ss.read())) {
             // If the GPS location is valid, add it to the rolling buffer
-            if (gps.location.isValid()) {
+            // Also, GPS location data must have been updated in the last 3 seconds
+            if (gps.location.isValid() && gps.location.age() < 3000) {
                 addReading(gps.location.lat(), gps.location.lng());
             }
-
+            else {
+                // Could not read valid GPS data
+                addReading(444.0, 444.0);
+            }
+            
             // // Print info every 200 ms as before
             // if (millis() - lastPrint > 200) {
             //     Serial.println("---------------");
