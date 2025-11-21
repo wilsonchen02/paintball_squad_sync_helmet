@@ -6,7 +6,7 @@
 
 
 
- #define DEVKIT
+//  #define DEVKIT
 
   const uint32_t GPSBaud = 57600;
 
@@ -43,14 +43,14 @@
 
   #define LED_PIN   15
 
-  #define RX_PIN_GPS 18
-  #define TX_PIN_GPS 17
+  #define RX_PIN_GPS 44
+  #define TX_PIN_GPS 43
 
   // #define SDA_PIN_IMU 9 //LIS2MDL
   // #define SCL_PIN_IMU 10  
 
-  #define RX_PIN_IMU 36 //BNO085
-  #define TX_PIN_IMU 37
+  #define RX_PIN_IMU 18 //BNO085
+  #define TX_PIN_IMU 17
   #define RESET_PIN_IMU -1    //tied to reset button
 
   #define BUTTON_PIN_1 4
