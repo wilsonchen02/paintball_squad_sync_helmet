@@ -7,10 +7,10 @@
 
 // ----- CONFIGURATION -----
 
-//  #define DEVKIT
+  //#define DEVKIT
 
-  #define PCB1  //no text on GPS
-//  #define PCB2  //text on GPS
+// #define PCB1  //no text on GPS
+  #define PCB2  //text on GPS
 
 // -----               -----
 
@@ -71,13 +71,13 @@
 #endif
 
 #ifdef PCB1
-  #define MAX_RAW_ADC 2415
-  #define MIN_RAW_ADC 1913 
+  #define MAX_RAW_ADC 2415 //4.20 V
+  #define MIN_RAW_ADC 1913 //3.38 V
 #endif
 
 #ifdef PCB2
-  #define MAX_RAW_ADC 1
-  #define MIN_RAW_ADC 1
+  #define MAX_RAW_ADC 2488 //4.20 V
+  #define MIN_RAW_ADC 1981 //3.38 V
 #endif
 
 #ifdef DEVKIT
@@ -585,13 +585,16 @@ void loop() {
 
   //  if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
   //  if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
-    
-  gps.update();
+        Serial.println("1");
 
+  gps.update();
+    Serial.println("2");
   if(imu.read()) {
+    Serial.println("3");
     heading = imu.getHeading(HEADING_MODE);
   }
   
+    Serial.println("4");
 
   // Serial.println(longitude, 7);
   // Serial.println(latitude, 7);
