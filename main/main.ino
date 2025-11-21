@@ -13,7 +13,7 @@
   #define HEADING_MODE SH2_GAME_ROTATION_VECTOR
 
   #define MAX_LED_COUNT   75
-  #define LED_COUNT   49
+  #define LED_COUNT   45
   #define DEFAULT_BRIGHTNESS   20
 
 //--- Pins ---
