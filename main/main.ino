@@ -5,8 +5,17 @@
 #include "espnow.h"
 
 
+// ----- CONFIGURATION -----
 
 //  #define DEVKIT
+
+  #define PCB1  //no text on GPS
+//  #define PCB2  //text on GPS
+
+// -----               -----
+
+
+
 
   const uint32_t GPSBaud = 57600;
 
@@ -43,22 +52,37 @@
 
   #define LED_PIN   15
 
-  #define RX_PIN_GPS 44
-  #define TX_PIN_GPS 43
+  #define RX_PIN_GPS 18
+  #define TX_PIN_GPS 17
 
   // #define SDA_PIN_IMU 9 //LIS2MDL
   // #define SCL_PIN_IMU 10  
 
-  #define RX_PIN_IMU 18 //BNO085
-  #define TX_PIN_IMU 17
+  #define RX_PIN_IMU 44 //BNO085
+  #define TX_PIN_IMU 43
   #define RESET_PIN_IMU -1    //tied to reset button
 
-  #define BUTTON_PIN_1 4
-  #define BUTTON_PIN_2 5
-  #define BUTTON_PIN_3 6
-  #define BUTTON_PIN_4 7
+  #define BUTTON_PIN_1 6
+  #define BUTTON_PIN_2 7
+  #define BUTTON_PIN_3 4
+  #define BUTTON_PIN_4 5
 
   #define BATTERY_PIN 11
+#endif
+
+#ifdef PCB1
+  #define MAX_RAW_ADC 2415
+  #define MIN_RAW_ADC 1913 
+#endif
+
+#ifdef PCB2
+  #define MAX_RAW_ADC 1
+  #define MIN_RAW_ADC 1
+#endif
+
+#ifdef DEVKIT
+  #define MAX_RAW_ADC 2720
+  #define MIN_RAW_ADC 2340
 #endif
 
 
@@ -587,9 +611,9 @@ void loop() {
 }
 
 
-uint8_t getBatteryPercentage() { //TODO
-  const uint16_t max_raw = 2720;  // ~4.08V
-  const uint16_t min_raw = 2340;    // ~3.3V
+uint8_t getBatteryPercentage() {
+  const uint16_t max_raw = MAX_RAW_ADC;
+  const uint16_t min_raw = MIN_RAW_ADC;
   
   uint16_t raw_adc_val = analogRead(BATTERY_PIN);
   
