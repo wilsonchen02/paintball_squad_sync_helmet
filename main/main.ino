@@ -9,7 +9,7 @@
 
   //#define DEVKIT
 
-#define PCB1  //no text on GPS
+   #define PCB1  //no text on GPS
   // #define PCB2  //text on GPS
 
 // -----               -----
@@ -399,7 +399,7 @@ void update_location_task(void *pvParameters) {
     longitude = gps.getAverageLongitude();
 
     gs.setLocation(longitude, latitude, heading);
-    Serial.printf("Long: %.6f, Lat: %.6f, Heading: %.2f\n", longitude, latitude, heading);
+    //Serial.printf("Long: %.6f, Lat: %.6f, Heading: %.2f\n", longitude, latitude, heading);
     //Serial.println(longitude, 6);    Serial.println(latitude, 6); 
     //Serial.println(heading, 6);
     //Serial.println(heading, 1);
@@ -512,8 +512,9 @@ void send_packet_task(void *pvParameters) {
     locdata loc;
     loc.lat = latitude;
     loc.lon = longitude;
-    if(gs.getState() == STATE_GUIDANCE) //TEMP
+    if(gs.getState() == STATE_GUIDANCE) //TEMPs
     now.espnow_send_data(message_type::Location, (uint8_t *)&loc, sizeof(loc));
+    //Serial.println("I'm sendin!");
   }
 }
 
@@ -621,8 +622,8 @@ uint8_t getBatteryPercentage() {
   uint16_t raw_adc_val = analogRead(BATTERY_PIN);
   
   double voltage = raw_adc_val * 3.1 / 4096;
-  Serial.printf("Raw ADC value: %i\n", raw_adc_val);
-  Serial.printf("Voltage: %d\n", voltage);
+  //Serial.printf("Raw ADC value: %i\n", raw_adc_val);
+  //Serial.printf("Voltage: %d\n", voltage);
 
   if (raw_adc_val > max_raw) raw_adc_val = max_raw;
   if (raw_adc_val < min_raw) raw_adc_val = min_raw;

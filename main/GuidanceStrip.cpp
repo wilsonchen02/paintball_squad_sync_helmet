@@ -281,6 +281,9 @@ void GuidanceStrip::removeObjectives() {
     if (it->type == OBJECTIVE_ELEM) {
       it = mapElems.erase(it);
     }
+    else {
+      it++;
+    }
   } 
 }
 
@@ -508,8 +511,8 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
       switch (state) {
         case STATE_GAME_SELECT: {
           setState(STATE_TEAM_SELECT);
-          // Clear previous objectives in mapElems
-          removeObjectives();
+          // // Clear previous objectives in mapElems
+           removeObjectives();
           // Set new objectives
           int current_code = getGameCode();
           Serial.printf("Game Code: %d\n", current_code);
