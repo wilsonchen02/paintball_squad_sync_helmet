@@ -40,8 +40,15 @@ typedef struct {
 #define MAX_DISTANCE 150 //in meters
 #define MIN_DISTANCE 3
 
+//------------MAP COORDINATES (long, lat)------------
+#define OBJ_TOWER_LONG -83.71617405550215
+#define OBJ_TOWER_LAT 42.291997783396106
 
+#define OBJ_PIERPONT_LONG -83.71708225140911
+#define OBJ_PIERPONT_LAT 42.29157850920744
 
+#define OBJ_DUDE_LONG -83.71492621548347
+#define OBJ_DUDE_LAT 42.29163878078494
 
 
 struct MapElement {
@@ -116,6 +123,7 @@ public:
   void addMate(uint8_t mac[6], float x, float y);
   void addMarker(float x, float y, int32_t ttl);
   void addObjective(float x, float y);
+  void removeObjectives();
 
   void mateEngaged(uint8_t mac[6]);
   void mateEliminated(uint8_t mac[6]);

@@ -265,14 +265,23 @@ void GuidanceStrip::mateEliminated(uint8_t mac[6]) {
 }
 
 
-void GuidanceStrip::addMarker(float x, float y, int32_t ttl) {
+void GuidanceStrip::addMarker(float x, float y, int32_t ttl) { // long, lat, time to live
   uint8_t zeroMac[6] = {0, 0, 0, 0, 0, 0};
   mapElems.emplace_back(zeroMac, MARKER_ELEM, x, y, ttl);
 }
 
-void GuidanceStrip::addObjective(float x, float y) {
+void GuidanceStrip::addObjective(float x, float y) {  // long, lat
     uint8_t zeroMac[6] = {0, 0, 0, 0, 0, 0};
     mapElems.emplace_back(zeroMac, OBJECTIVE_ELEM, x, y, -1);
+}
+
+// Removes all the map objectives in the mapElems vector
+void GuidanceStrip::removeObjectives() {
+  for (auto it = mapElems.begin(); it != mapElems.end();) {
+    if (it->type == OBJECTIVE_ELEM) {
+      it = mapElems.erase(it);
+    }
+  } 
 }
 
 void GuidanceStrip::mateSOS(uint8_t mac[6]) {
@@ -499,6 +508,22 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
       switch (state) {
         case STATE_GAME_SELECT: {
           setState(STATE_TEAM_SELECT);
+          // Clear previous objectives in mapElems
+          removeObjectives();
+          // Set new objectives
+          int current_code = getGameCode();
+          Serial.printf("Game Code: %d\n", current_code);
+
+          // Hard coded objectives depending on game selected
+          if(current_code == 2) { // Map 1
+            Serial.println("Map 1 Selected");
+            addObjective(OBJ_TOWER_LONG, OBJ_TOWER_LAT);
+          }
+          else if(current_code = 5) {  // Map 2
+            Serial.println("Map 2 Selected");
+            addObjective(OBJ_PIERPONT_LONG, OBJ_PIERPONT_LAT);
+            addObjective(OBJ_DUDE_LONG, OBJ_DUDE_LAT);
+          }
           break;
         }
         case STATE_TEAM_SELECT: {

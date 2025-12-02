@@ -9,8 +9,8 @@
 
   //#define DEVKIT
 
-// #define PCB1  //no text on GPS
-  #define PCB2  //text on GPS
+#define PCB1  //no text on GPS
+  // #define PCB2  //text on GPS
 
 // -----               -----
 
@@ -246,9 +246,9 @@ void setup() {
    //gs.addObjective(-83.7154600000,42.2925150000);
    //gs.addObjective(-83.71535421756761,42.292475859161556);
 
-    gs.addObjective(-83.71617405550215, 42.291997783396106); //tower
-    gs.addObjective(-83.71708225140911, 42.29157850920744); //pierpont
-    gs.addObjective(-83.71492621548347, 42.29163878078494); //dude
+    // gs.addObjective(-83.71617405550215, 42.291997783396106); //tower
+    // gs.addObjective(-83.71708225140911, 42.29157850920744); //pierpont
+    // gs.addObjective(-83.71492621548347, 42.29163878078494); //dude
     
     // Futureball demo
     // gs.addObjective(-83.767000, 42.446000); // SE corner of parking lot
@@ -585,16 +585,16 @@ void loop() {
 
   //  if(lastTeamCode != gs.getTeamCode()) {Serial.print("Team Code: "); Serial.println(gs.getTeamCode()); lastTeamCode = gs.getTeamCode();}
   //  if(lastGameCode != gs.getGameCode()) {Serial.print("Game Code: "); Serial.println(gs.getGameCode()); lastGameCode = gs.getGameCode();}
-        Serial.println("1");
+        // Serial.println("1");
 
   gps.update();
-    Serial.println("2");
+    // Serial.println("2");
   if(imu.read()) {
-    Serial.println("3");
+    // Serial.println("3");
     heading = imu.getHeading(HEADING_MODE);
   }
   
-    Serial.println("4");
+    // Serial.println("4");
 
   // Serial.println(longitude, 7);
   // Serial.println(latitude, 7);
@@ -620,9 +620,9 @@ uint8_t getBatteryPercentage() {
   
   uint16_t raw_adc_val = analogRead(BATTERY_PIN);
   
-  // double voltage = raw_adc_val * 3.1 / 4096;
-  // Serial.printf("Raw ADC value: %i\n", raw_adc_val);
-  // Serial.printf("Voltage: %d\n", voltage);
+  double voltage = raw_adc_val * 3.1 / 4096;
+  Serial.printf("Raw ADC value: %i\n", raw_adc_val);
+  Serial.printf("Voltage: %d\n", voltage);
 
   if (raw_adc_val > max_raw) raw_adc_val = max_raw;
   if (raw_adc_val < min_raw) raw_adc_val = min_raw;
