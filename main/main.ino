@@ -76,8 +76,8 @@
 #endif
 
 #ifdef PCB2
-  #define MAX_RAW_ADC 2488 //4.20 V
-  #define MIN_RAW_ADC 1981 //3.38 V
+  #define MAX_RAW_ADC 1585 //4.20 V
+  #define MIN_RAW_ADC 1163 //3.38 V
 #endif
 
 #ifdef DEVKIT
