@@ -11,7 +11,7 @@ void GuidanceStrip::begin() {
 }
 
 void GuidanceStrip::setLED(uint16_t index, uint8_t r, uint8_t g, uint8_t b) {
-  if(batteryPercentage < BATTERY_WARNING_THRESHOLD && (index == 0 || index == numPixels-1)) return; //make room for battery warning
+  if(batteryPercentage < BATTERY_WARNING_THRESHOLD && (index < BATTERY_WARNING_LEDS || index > numPixels-1-BATTERY_WARNING_LEDS)) return; //make room for battery warning
   
   if (index < numPixels) {
     strip.setPixelColor(index, strip.Color(r, g, b));
@@ -171,8 +171,10 @@ void GuidanceStrip::showBatteryWarning() {
   if (batteryPercentage < BATTERY_WARNING_THRESHOLD) {
     uint32_t color = strip.Color(255, 0, 0);
 
-    strip.setPixelColor(0, color);
-    strip.setPixelColor(numPixels - 1, color);
+    for(int i = 0; i < BATTERY_WARNING_LEDS; i++) {
+      strip.setPixelColor(i, color);
+      strip.setPixelColor(numPixels - 1 - i, color);
+    }
   }
 
   strip.show();
@@ -412,16 +414,14 @@ void GuidanceStrip::showMap() {
       if(elem.r != c.r || elem.g != c.g || elem.b != c.b)
         continue;
       if(relativeAngle > -90) {
-        setLED(numPixels-1, c.r, c.g, c.b);
-        setLED(numPixels-2, c.r, c.g, c.b);
-        setLED(numPixels-3, c.r, c.g, c.b);
-        setLED(numPixels-4, c.r, c.g, c.b);
+        for(int i = 0; i < SOS_BEHIND_LEDS; i++) {
+          setLED(numPixels-1-i, c.r, c.g, c.b);
+        }
       }
       if(relativeAngle < 90) {
-        setLED(0, c.r, c.g, c.b);
-        setLED(1, c.r, c.g, c.b);
-        setLED(2, c.r, c.g, c.b);
-        setLED(3, c.r, c.g, c.b);
+        for(int i = 0; i < SOS_BEHIND_LEDS; i++) {
+          setLED(i, c.r, c.g, c.b);
+        }
       }
       continue;
     }

@@ -9,8 +9,8 @@
 
   //#define DEVKIT
 
-   #define PCB1  //no text on GPS
-  // #define PCB2  //text on GPS
+  //#define PCB1  //no text on GPS
+   #define PCB2  //text on GPS
 
 // -----               -----
 
@@ -589,7 +589,7 @@ void loop() {
         // Serial.println("1");
 
   gps.update();
-    // Serial.println("2");
+     Serial.println("2");
   if(imu.read()) {
     // Serial.println("3");
     heading = imu.getHeading(HEADING_MODE);
@@ -622,7 +622,7 @@ uint8_t getBatteryPercentage() {
   uint16_t raw_adc_val = analogRead(BATTERY_PIN);
   
   double voltage = raw_adc_val * 3.1 / 4096;
-  //Serial.printf("Raw ADC value: %i\n", raw_adc_val);
+  Serial.printf("Raw ADC value: %i\n", raw_adc_val);                                                      
   //Serial.printf("Voltage: %d\n", voltage);
 
   if (raw_adc_val > max_raw) raw_adc_val = max_raw;

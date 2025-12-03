@@ -19,6 +19,10 @@
 #define MATE_TTL 3000 //refresh TTL to be change
 
 #define BATTERY_WARNING_THRESHOLD 20
+#define BATTERY_WARNING_LEDS 5
+
+#define SOS_BEHIND_LEDS 8
+
 
 //COLORS
 typedef struct {
