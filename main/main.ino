@@ -76,8 +76,8 @@
 #endif
 
 #ifdef PCB2
-  #define MAX_RAW_ADC 1585 //4.20 V
-  #define MIN_RAW_ADC 1163 //3.38 V
+  #define MAX_RAW_ADC 2360 //4.20 V
+  #define MIN_RAW_ADC 1840 //3.38 V
 #endif
 
 #ifdef DEVKIT
@@ -622,12 +622,12 @@ uint8_t getBatteryPercentage() {
   uint16_t raw_adc_val = analogRead(BATTERY_PIN);
   
   double voltage = raw_adc_val * 3.1 / 4096;
-  Serial.printf("Raw ADC value: %i\n", raw_adc_val);                                                      
+  //Serial.printf("Raw ADC value: %i\n", raw_adc_val);                                                      
   //Serial.printf("Voltage: %d\n", voltage);
 
   if (raw_adc_val > max_raw) raw_adc_val = max_raw;
   if (raw_adc_val < min_raw) raw_adc_val = min_raw;
 
-  return 100; //for testing
-  //return (int)((float)(raw_adc_val-min_raw)/(max_raw-min_raw) * 100);
+  //return 100; //for testing
+  return (int)((float)(raw_adc_val-min_raw)/(max_raw-min_raw) * 100);
 }
