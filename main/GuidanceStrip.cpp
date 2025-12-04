@@ -424,6 +424,7 @@ void GuidanceStrip::showMap() {
           setLED(i, c.r, c.g, c.b);
         }
       }
+      show();
       continue;
     }
 

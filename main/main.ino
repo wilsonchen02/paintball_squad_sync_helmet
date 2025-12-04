@@ -9,8 +9,8 @@
 
   //#define DEVKIT
 
-  //#define PCB1  //no text on GPS
-   #define PCB2  //text on GPS
+  #define PCB1  //no text on GPS
+   //#define PCB2  //text on GPS
 
 // -----               -----
 
@@ -114,6 +114,8 @@ espnow now;
 
 
 uint8_t mac1[6] = {1, 1, 1, 1, 1, 1};
+
+uint8_t SOSMac[6];
 
 float heading = -999;
 float latitude = -999;
@@ -465,6 +467,7 @@ void parse_packet_task(void* pvParameters) {
         case message_type::SOS:
           gs.addMate(rx_pkt.sender_mac, loc.lon, loc.lat);
           gs.mateSOS(rx_pkt.sender_mac);
+          memcpy(SOSMac, rx_pkt.sender_mac, 6);
           break;
         case message_type::ClearSOS:
           gs.clearSOS();
@@ -472,9 +475,11 @@ void parse_packet_task(void* pvParameters) {
       }
       
       // Verify team
-      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != gs.getTeamCode()) {
+      if (rx_pkt.packet[PACKET_TEAMID_FIELD_INDEX] != gs.getTeamCode() && !gs.isInSOS()) {
         continue;
       }
+      
+      if (gs.isInSOS() && memcmp(SOSMac, rx_pkt.sender_mac, 6) != 0) continue;
 
       //Team-specific messages
       switch (data_type) {
