@@ -589,7 +589,7 @@ void loop() {
         // Serial.println("1");
 
   gps.update();
-     Serial.println("2");
+     //Serial.println("2");
   if(imu.read()) {
     // Serial.println("3");
     heading = imu.getHeading(HEADING_MODE);
@@ -628,6 +628,6 @@ uint8_t getBatteryPercentage() {
   if (raw_adc_val > max_raw) raw_adc_val = max_raw;
   if (raw_adc_val < min_raw) raw_adc_val = min_raw;
 
-  //return 100; //for testing
-  return (int)((float)(raw_adc_val-min_raw)/(max_raw-min_raw) * 100);
+  return 100; //for testing
+  //return (int)((float)(raw_adc_val-min_raw)/(max_raw-min_raw) * 100);
 }

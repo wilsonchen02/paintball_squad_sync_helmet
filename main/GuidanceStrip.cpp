@@ -520,12 +520,11 @@ void GuidanceStrip::handlePhysicalInput(uint8_t input) {
           // Hard coded objectives depending on game selected
           if(current_code == 2) { // Map 1
             Serial.println("Map 1 Selected");
-            addObjective(OBJ_TOWER_LONG, OBJ_TOWER_LAT);
+            addObjective(OBJ_WEST_TOWER_LONG, OBJ_WEST_TOWER_LAT);
           }
-          else if(current_code = 5) {  // Map 2
+          else if(current_code == 5) {  // Map 2
             Serial.println("Map 2 Selected");
-            addObjective(OBJ_PIERPONT_LONG, OBJ_PIERPONT_LAT);
-            addObjective(OBJ_DUDE_LONG, OBJ_DUDE_LAT);
+            addObjective(OBJ_TWO_HEARTS_LONG, OBJ_TWO_HEARTS_LAT);
           }
           break;
         }
