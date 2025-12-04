@@ -19,6 +19,8 @@ GuidanceStrip gs(LED_COUNT, LED_PIN, DEFAULT_BRIGHTNESS);
 IMU_BNO085 imu(RX_PIN_IMU, TX_PIN_IMU, RESET_PIN_IMU, 180); 
 
 uint8_t mac1[6] = {1, 1, 1, 1, 1, 1};
+uint8_t mac2[6] = {2, 2, 2, 2, 2, 2};
+uint8_t mac3[6] = {3, 3, 3, 3, 3, 3};
 
 void setup() {
 
@@ -44,8 +46,13 @@ void setup() {
   
   //some example points
   gs.addMate(mac1, 0.00010, 0.0004);
-  gs.addMarker(-0.0002, 0.0002, -0.0001);
+  gs.addMate(mac2, -0.00010, 0.0004);
+  gs.addMate(mac3, -0.00010, -0.0008);
+
+  // gs.addMarker(-0.0002, 0.0002, -0.0001);
+
   gs.addObjective(0, 0.00020);
+  gs.addObjective(0, -0.0005);
 
 }
 
@@ -61,6 +68,9 @@ float prev_time = 0;
 
 
 void loop() {
+  gs.addMate(mac2, -0.00100, 0.0004);
+  gs.addMate(mac3, -0.00030, -0.0008);
+
   //mate walking back and forth
   mate_x += mate_speed * mate_dir;
 
